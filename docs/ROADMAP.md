@@ -18,9 +18,9 @@ Build:
 
 Acceptance:
 - [ ] `python -m pytest -q` passes; server runs locally in Codespaces and `/api/v1/health` returns ok.
-- [ ] Security headers from SECURITY.md section 6 present (CSP initially `self` only).
+- [x] Security headers from SECURITY.md section 6 present (CSP initially `self` only).
 - [ ] Public URL serves the page and health check; `smoke_deploy.py <URL> --deep` reports IRSA reachable from the host (DATA_SOURCES check #9).
-- [ ] DEVLOG entry: host chosen, Python version in the image, RAM limit, port.
+- [x] DEVLOG entry: host chosen, Python version in the image, RAM limit, port.
 
 ## Slice 1: Core loop, one target end to end  (hours 3-12)  **MVP CORE**
 
