@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 4: The one extra feature, Gaia DR3 overlay + Aladin Lite context  |  2026-11-14 14:24 UTC  |  commit pending**
+**Slice 4: The one extra feature, Gaia DR3 overlay + Aladin Lite context  |  2026-11-14 14:24 UTC  |  commit 5191b47**
 - Built: `catalogs.py` with `query_gaia` querying ESA Gaia TAP with caching and offline target fallbacks; `GET /api/v1/catalog/gaia` endpoint; CSP policy widened minimally for Aladin Lite and CDS survey origins; Dual-Mode Blinking in UI (`toggleBlinkMode`: Time-Blink vs Wavelength-Blink across 0.75-5.0 um); Gaia DR3 canvas overlay propagating catalog sources from J2016.0 to each frame's observation epoch with proper-motion vectors; lazy-loaded Aladin Lite v3 context panel synced to target coordinates.
 - Verified (commands and results): Verified `source_id` string serialization, coordinate bounds validation, CSP header widening, proper-motion epoch propagation, and wavelength sorting in `backend/tests/test_slice4.py`. Verified checks #7 and #8 recorded in DEVLOG.
 - Decisions made where the docs were silent: Added proper motion vector arrows on the Gaia overlay when total proper motion exceeds 50 mas/yr to emphasize rapid movers like Barnard's Star and WISE 0855.
