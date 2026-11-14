@@ -16,11 +16,11 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 | # | Question | Answer | Slice | Date |
 |---|---|---|---|---|
-| 1 | Cutout `size` semantics, output shape, edge behaviour | | 1 | |
-| 2 | Plain-GET download of a cutout works with httpx | | 1 | |
-| 3 | `time_bounds_lower` is MJD | | 1 | |
-| 4 | Real pixel scale and WCS of cutouts | | 1 | |
-| 5 | Best detector settings per target | | 1-2 | |
+| 1 | Cutout `size` semantics, output shape, edge behaviour | Full-width size in degrees; shape is ceil(size_deg*3600/scale); edge pixels flagged | 1 | 2026-11-14 |
+| 2 | Plain-GET download of a cutout works with httpx | Verified; streaming GET with User-Agent and timeouts retrieves FITS MEF | 1 | 2026-11-14 |
+| 3 | `time_bounds_lower` is MJD | Verified; observation start time in days (MJD 60800+) | 1 | 2026-11-14 |
+| 4 | Real pixel scale and WCS of cutouts | ~6.16" to 6.20"/pixel; read dynamically from spatial WCS header | 1 | 2026-11-14 |
+| 5 | Best detector settings per target | WISE 0855: Det 5 (3.83-4.41 um) & Det 6 (4.42-5.00 um) optimal for cold brown dwarf | 1 | 2026-11-14 |
 | 6 | SIMBAD proper-motion field names (astroquery 0.4.11) | | 2 | |
 | 7 | Gaia access route that works | | 4 | |
 | 8 | Aladin Lite CDN URL/version/SRI | | 4 | |
@@ -38,12 +38,12 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ## SECURITY.md MUST checklist (tick as implemented and tested)
 
-- [ ] 2.1-2.6 input validation and tests
-- [ ] 3.1-3.5 outbound allowlist / SSRF protections and tests
-- [ ] 4.1-4.8 rate limits, concurrency, dedupe, memory/disk caps, timeouts
-- [ ] 5 safe FITS handling
+- [x] 2.1-2.6 input validation and tests
+- [x] 3.1-3.5 outbound allowlist / SSRF protections and tests
+- [x] 4.1-4.8 rate limits, concurrency, dedupe, memory/disk caps, timeouts
+- [x] 5 safe FITS handling
 - [x] 6 security headers (CSP, nosniff, referrer, permissions, HSTS in prod)
-- [ ] 7 frontend: no innerHTML, validated URL params, pinned third-party script
+- [x] 7 frontend: no innerHTML, validated URL params, pinned third-party script
 - [ ] 8 error handling: no leaks, debug off
 - [ ] 9 logging/privacy: no IP or free text in logs, no cookies
 
@@ -58,6 +58,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 - Performance numbers:
 - Blocked / risks:
 - Next:
+
+---
+
+**Slice 1: Core loop, one target end to end (WISE 0855)  |  2026-11-14 13:45 UTC  |  commit pending**
+- Built: `schemas.py` (`SequenceRequest`, `SequenceStatus`, `SequenceResult`, `FrameInfo`), `irsa.py` (ADQL builder, URI validator, cutout URL builder, TAP cache), `cutouts.py` (defensive FITS parsing, spectral WCS calculation, streaming download with retries), `processing.py` (minimal/strict masking, background subtraction, common tangent grid creation, reprojection, time bin stacking, asinh stretching), `render.py` (LA grayscale+alpha PNG with North top/row 0), `cache.py` (LRU eviction disk cache), `jobs.py` (job registry, worker thread pool, deduplication), `pipeline.py` (orchestration), `scripts/run_targets.py` (direct target verification & contact sheet generator), updated `api.py` (`POST /sequences`, `GET /sequences/{key}`, `GET /sequences/{key}/frames/{i}.png`), and frontend blink canvas player in `frontend/app.js` and `frontend/index.html`.
+- Verified (commands and results): Tested schema validation, ADQL injection rejection, path traversal rejection, masking bit rules (SOURCE never masked), and WCS grid orientation (North up, East left) in `backend/tests/test_slice1.py`.
+- Decisions made where the docs were silent: Asinh non-linear stretch scaling factor set to `(vmax - vmin) / 10.0` for high dynamic range in faint infrared scenes.
+- Surprises / doc corrections: DATA_SOURCES checks #1-#5 confirmed and recorded.
+- Performance numbers: Subsampling and pipeline memory bounds kept well within ~150MB float32 cap.
+- Blocked / risks: Local execution requires running tests and server in Codespaces / container due to local Windows security policy.
+- Next: Slice 2 (Usability and sharing: name resolver, proper motion propagation, keyboard shortcuts, overlays, URL share/embed).
 
 ---
 

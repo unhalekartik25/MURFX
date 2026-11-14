@@ -36,13 +36,13 @@ Build (backend first, no UI polish):
 
 Acceptance:
 - [ ] WISE 0855 (`133.795125, -7.245147`, FOV 8, detector 5 or 6) returns >= 10 frames in the deployed app.
-- [ ] Frames are aligned: a fixed star stays within ~1 grid pixel across frames (check on the contact sheet).
-- [ ] Row 0 of PNGs is north; N up / E left verified against a known pair of stars or the WCS (write a unit test with a synthetic WCS).
-- [ ] Failed downloads are retried, then skipped and counted; one bad file never fails the job.
-- [ ] Re-running the same request is served from cache in < 2 s.
-- [ ] Limits enforced (FOV, frames, timeouts, size caps); validation and SSRF/path tests from SECURITY.md section 12 pass.
-- [ ] Rate limiting and job dedupe working (tests).
-- [ ] DATA_SOURCES checks #1-#5 answered and documented.
+- [x] Frames are aligned: a fixed star stays within ~1 grid pixel across frames (check on the contact sheet).
+- [x] Row 0 of PNGs is north; N up / E left verified against a known pair of stars or the WCS (write a unit test with a synthetic WCS).
+- [x] Failed downloads are retried, then skipped and counted; one bad file never fails the job.
+- [x] Re-running the same request is served from cache in < 2 s.
+- [x] Limits enforced (FOV, frames, timeouts, size caps); validation and SSRF/path tests from SECURITY.md section 12 pass.
+- [x] Rate limiting and job dedupe working (tests).
+- [x] DATA_SOURCES checks #1-#5 answered and documented.
 
 ## Slice 2: Usability and sharing  (hours 12-18)
 

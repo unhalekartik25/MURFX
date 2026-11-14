@@ -9,11 +9,21 @@ from __future__ import annotations
 import time
 from typing import Any
 import httpx
-from fastapi import APIRouter, Query, Request, Response, status
+from fastapi import APIRouter, Path as FPath, Query, Request, Response, status
+from fastapi.responses import FileResponse, JSONResponse
 
+from backend.app.cache import disk_cache
 from backend.app.config import DETECTOR_METADATA, settings
 from backend.app.errors import AppError
-from backend.app.security import deep_health_limiter, get_client_ip
+from backend.app.jobs import job_registry
+from backend.app.schemas import SequenceRequest, SequenceStatus
+from backend.app.security import (
+    SEQUENCE_KEY_REGEX,
+    create_limiter,
+    deep_health_limiter,
+    frames_limiter,
+    get_client_ip,
+)
 
 router = APIRouter(prefix="/api/v1")
 
@@ -51,7 +61,6 @@ async def health(
                 headers={"Retry-After": str(int(retry_after))},
             )
 
-        # Ping IRSA TAP
         irsa_status = "unavailable"
         try:
             async with httpx.AsyncClient(
@@ -88,3 +97,110 @@ async def meta(response: Response) -> dict[str, Any]:
         "latest_observation_iso": None,
         "attribution": settings.attribution,
     }
+
+
+@router.post("/sequences", tags=["sequences"])
+async def create_sequence(
+    req: SequenceRequest,
+    request: Request,
+    response: Response,
+) -> JSONResponse:
+    """Create or retrieve a sequence job per docs/API_SPEC.md section 3.4.
+
+    Returns HTTP 200 if already done; HTTP 202 if queued or running.
+    """
+    client_ip = get_client_ip(request)
+
+    # Rate limiting on sequence creation (6 req/min per IP)
+    allowed, retry_after = create_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Sequence creation rate limit exceeded. Please wait before submitting more requests.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    status_obj, is_new = job_registry.submit_sequence(req, client_ip)
+
+    if status_obj.status == "done":
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=status_obj.model_dump(),
+            headers={"Cache-Control": "public, max-age=300"},
+        )
+    else:
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content=status_obj.model_dump(),
+            headers={
+                "Location": f"/api/v1/sequences/{status_obj.key}",
+                "Cache-Control": "no-store",
+            },
+        )
+
+
+@router.get("/sequences/{key}", tags=["sequences"])
+async def get_sequence_status(
+    key: str = FPath(..., description="32-character hex sequence key"),
+    response: Response = None,  # type: ignore[assignment]
+) -> JSONResponse:
+    """Poll sequence status or retrieve result per docs/API_SPEC.md section 3.5."""
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError(
+            code="NOT_FOUND",
+            http_status=status.HTTP_404_NOT_FOUND,
+            message=f"Sequence key '{key}' not found or malformed.",
+        )
+
+    status_obj = job_registry.get_status(key)
+    if not status_obj:
+        raise AppError(
+            code="NOT_FOUND",
+            http_status=status.HTTP_404_NOT_FOUND,
+            message=f"Sequence key '{key}' not found.",
+        )
+
+    cache_ctrl = "public, max-age=300" if status_obj.status == "done" else "no-store"
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=status_obj.model_dump(),
+        headers={"Cache-Control": cache_ctrl},
+    )
+
+
+@router.get("/sequences/{key}/frames/{index}.png", tags=["sequences"])
+async def get_sequence_frame(
+    request: Request,
+    key: str = FPath(..., description="32-character hex sequence key"),
+    index: int = FPath(..., ge=0, description="0-based frame index"),
+) -> FileResponse:
+    """Serve rendered PNG frame per docs/API_SPEC.md section 3.6.
+
+    Cache-Control: public, max-age=86400, immutable
+    """
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    client_ip = get_client_ip(request)
+    allowed, retry_after = frames_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Frame retrieval rate limit exceeded.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    png_path = disk_cache.get_frame_png_path(key, index)
+    if not png_path or not png_path.exists():
+        raise AppError("NOT_FOUND", 404, f"Frame {index} for sequence {key} not found.")
+
+    return FileResponse(
+        path=str(png_path),
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=86400, immutable",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

@@ -8,12 +8,10 @@ from __future__ import annotations
 import re
 import time
 import uuid
-from typing import Callable
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from backend.app.config import settings
-from backend.app.errors import AppError
 
 # Slice 0-3 Strict Content-Security-Policy
 # frame-ancestors * is intentional and required for embedding (docs/SECURITY.md section 6)
@@ -30,6 +28,7 @@ CSP_POLICY = (
 )
 
 REQUEST_ID_REGEX = re.compile(r"^[0-9a-zA-Z\-_]{1,64}$")
+SEQUENCE_KEY_REGEX = re.compile(r"^[0-9a-f]{32}$")
 
 
 def get_client_ip(request: Request) -> str:
@@ -114,4 +113,6 @@ class InMemoryTokenBucket:
 
 # Global rate limiter instances (per IP)
 general_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_general_per_min)
+create_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_create_per_min, burst=settings.rate_create_per_min)
+frames_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_frames_per_min, burst=100)
 deep_health_limiter = InMemoryTokenBucket(rate_per_min=2, burst=2)
