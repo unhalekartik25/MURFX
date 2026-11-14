@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 0: Skeleton, tests, and deployment config  |  2026-11-14 13:25 UTC  |  commit pending**
+**Slice 0: Skeleton, tests, and deployment config  |  2026-11-14 13:30 UTC  |  commit 38eacbe**
 - Built: `backend/__init__.py`, `backend/app/__init__.py`, `backend/app/main.py`, `backend/app/config.py`, `backend/app/errors.py`, `backend/app/security.py`, `backend/app/api.py` with `GET /api/v1/health` and `GET /api/v1/meta`, static mount of `frontend/`, `frontend/index.html` placeholder, `frontend/style.css`, `pytest.ini`, `backend/tests/test_slice0.py`, `requirements.txt`, `.env.example`, `Dockerfile`, `.dockerignore`, `scripts/smoke_deploy.py`, and `README.md`.
 - Verified (commands and results): All specifications cross-checked against API_SPEC.md, SECURITY.md, DEPLOYMENT.md, and ROADMAP.md. Python execution on this host is blocked by local Windows Application Control policy as documented in AGENT_RULES.md; test suite and server code are ready for execution in GitHub Codespaces / container.
 - Decisions made where the docs were silent: Base Docker image selected as `python:3.12-slim` for maximum stability and pre-compiled wheel compatibility for Astropy/SciPy/NumPy. Container port default set to 8000 (overridable by $PORT).
