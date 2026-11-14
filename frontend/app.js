@@ -21,6 +21,13 @@ let blinkMode = "time"; // "time" or "wavelength"
 let gaiaSources = [];
 let aladinInstance = null;
 
+// Spectrum & Audio Sonification State (Slice 6)
+let currentSpectrumData = null;
+let audioContext = null;
+let audioNodes = [];
+let audioPlayheadAnimId = null;
+let clickedPixelCoords = null;
+
 // DOM Elements
 const appHeader = document.getElementById("app-header");
 const appFooter = document.getElementById("app-footer");
@@ -90,6 +97,18 @@ const blinkModeBtn = document.getElementById("blink-mode-btn");
 
 const gaiaCanvas = document.getElementById("gaia-canvas");
 const gaiaCtx = gaiaCanvas ? gaiaCanvas.getContext("2d") : null;
+
+// Spectrum & Audio DOM Elements (Slice 6)
+const spectrumSection = document.getElementById("spectrum-section");
+const spectrumCanvas = document.getElementById("spectrum-canvas");
+const spectrumCtx = spectrumCanvas ? spectrumCanvas.getContext("2d") : null;
+const spectrumCoordsText = document.getElementById("spectrum-coords-text");
+const spectrumRadiusSelect = document.getElementById("spectrum-radius-select");
+const playAudioBtn = document.getElementById("play-audio-btn");
+const stopAudioBtn = document.getElementById("stop-audio-btn");
+const closeSpectrumBtn = document.getElementById("close-spectrum-btn");
+const spectrumStats = document.getElementById("spectrum-stats");
+const spectrumPin = document.getElementById("spectrum-pin");
 
 const metaMjd = document.getElementById("meta-mjd");
 const metaDate = document.getElementById("meta-date");
@@ -205,6 +224,30 @@ function initEventListeners() {
   canvas.addEventListener("mouseleave", () => {
     hoverCoords.textContent = "RA: --, Dec: --";
   });
+
+  // Canvas Click for Pixel Spectrum Extraction (Slice 6)
+  canvas.addEventListener("click", handleCanvasClick);
+  if (flagsCanvas) flagsCanvas.addEventListener("click", handleCanvasClick);
+  if (gaiaCanvas) gaiaCanvas.addEventListener("click", handleCanvasClick);
+
+  if (spectrumRadiusSelect) {
+    spectrumRadiusSelect.addEventListener("change", () => {
+      if (clickedPixelCoords) {
+        const r = parseInt(spectrumRadiusSelect.value, 10) || 1;
+        fetchAndRenderSpectrum(clickedPixelCoords.x, clickedPixelCoords.y, r);
+      }
+    });
+  }
+  if (playAudioBtn) playAudioBtn.addEventListener("click", playAudioSonification);
+  if (stopAudioBtn) stopAudioBtn.addEventListener("click", stopAudioSonification);
+  if (closeSpectrumBtn) {
+    closeSpectrumBtn.addEventListener("click", () => {
+      stopAudioSonification();
+      if (spectrumSection) spectrumSection.classList.add("hidden");
+      if (spectrumPin) spectrumPin.classList.add("hidden");
+      clickedPixelCoords = null;
+    });
+  }
 
   // Share & Embed Buttons
   shareLinkBtn.addEventListener("click", copyShareLink);
@@ -1014,6 +1057,10 @@ function clearNotices() {
   errorSection.classList.add("hidden");
   warningsText.textContent = "";
   warningsSection.classList.add("hidden");
+  stopAudioSonification();
+  if (spectrumSection) spectrumSection.classList.add("hidden");
+  if (spectrumPin) spectrumPin.classList.add("hidden");
+  clickedPixelCoords = null;
 }
 
 function updateProgress(stage, pct) {
@@ -1025,4 +1072,358 @@ function updateProgress(stage, pct) {
 
 function hideProgress() {
   progressSection.classList.add("hidden");
+}
+
+// Slice 6: Pixel Spectrum Extraction & Audio Sonification
+function handleCanvasClick(e) {
+  if (!currentSequenceKey || !currentResult || !currentResult.grid) return;
+  const rect = canvas.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
+
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  const px = (e.clientX - rect.left) * scaleX;
+  const py = (e.clientY - rect.top) * scaleY;
+
+  if (px < 0 || px >= canvas.width || py < 0 || py >= canvas.height) return;
+
+  const gridX = Math.round(px);
+  const gridY = Math.round(py);
+  clickedPixelCoords = { x: gridX, y: gridY };
+
+  // Position visual pin marker on canvas
+  if (spectrumPin) {
+    spectrumPin.style.left = `${e.clientX - rect.left}px`;
+    spectrumPin.style.top = `${e.clientY - rect.top}px`;
+    spectrumPin.classList.remove("hidden");
+  }
+
+  const radius = parseInt(spectrumRadiusSelect?.value || "1", 10) || 1;
+  fetchAndRenderSpectrum(gridX, gridY, radius);
+}
+
+async function fetchAndRenderSpectrum(x, y, radius) {
+  if (!currentSequenceKey) return;
+  if (spectrumCoordsText) {
+    spectrumCoordsText.textContent = `Extracting spectrum at pixel (${x}, ${y})...`;
+  }
+  if (spectrumSection) {
+    spectrumSection.classList.remove("hidden");
+  }
+
+  try {
+    const res = await fetch(`/api/v1/spectrum?key=${currentSequenceKey}&x=${x}&y=${y}&radius_px=${radius}`);
+    if (!res.ok) {
+      if (res.status === 404) {
+        if (spectrumCoordsText) {
+          spectrumCoordsText.textContent = `Spectral cube data not retained for sequence (generate sequence locally to retain cube).`;
+        }
+        return;
+      }
+      const err = await res.json().catch(() => ({}));
+      if (spectrumCoordsText) {
+        spectrumCoordsText.textContent = `Error: ${err.error?.message || "Failed to extract spectrum"}`;
+      }
+      return;
+    }
+
+    const data = await res.json();
+    currentSpectrumData = data;
+
+    // Compute sky RA/Dec for the extracted coordinate
+    const centerRa = parseFloat(raInput.value);
+    const centerDec = parseFloat(decInput.value);
+    const degPerPx = (currentResult?.grid?.pixscale_arcsec || 3.08) / 3600.0;
+    const dxPx = x - canvas.width / 2.0;
+    const dyPx = canvas.height / 2.0 - y;
+    const decVal = centerDec + dyPx * degPerPx;
+    const cosDec = Math.cos((centerDec * Math.PI) / 180.0) || 1.0;
+    const raVal = centerRa - (dxPx * degPerPx) / cosDec;
+
+    if (spectrumCoordsText) {
+      spectrumCoordsText.textContent = `Pixel (${x}, ${y}) \u2022 RA: ${raVal.toFixed(4)}\u00B0, Dec: ${decVal.toFixed(4)}\u00B0 \u2022 ${data.n_points} spectral points`;
+    }
+
+    drawSpectrumPlot(data, -1);
+  } catch (err) {
+    if (spectrumCoordsText) {
+      spectrumCoordsText.textContent = `Network error fetching spectrum: ${err.message}`;
+    }
+  }
+}
+
+function drawSpectrumPlot(spectrumData, activeIndex) {
+  if (!spectrumCtx || !spectrumCanvas) return;
+  const w = spectrumCanvas.width;
+  const h = spectrumCanvas.height;
+  spectrumCtx.clearRect(0, 0, w, h);
+
+  const points = spectrumData.points || [];
+  if (points.length === 0) {
+    spectrumCtx.fillStyle = "#64748b";
+    spectrumCtx.font = "14px sans-serif";
+    spectrumCtx.textAlign = "center";
+    spectrumCtx.fillText("No valid spectral points in extracted aperture.", w / 2, h / 2);
+    return;
+  }
+
+  const padLeft = 60;
+  const padRight = 30;
+  const padTop = 25;
+  const padBottom = 35;
+  const plotW = w - padLeft - padRight;
+  const plotH = h - padTop - padBottom;
+
+  const wlMin = Math.min(0.75, Math.min(...points.map((p) => p.wavelength_um)));
+  const wlMax = Math.max(5.0, Math.max(...points.map((p) => p.wavelength_um)));
+  const wlRange = wlMax > wlMin ? wlMax - wlMin : 1.0;
+
+  const fluxVals = points.map((p) => p.flux_mjy_sr);
+  const minFlux = Math.min(...fluxVals);
+  const maxFlux = Math.max(...fluxVals);
+  const fluxPad = Math.max(0.1, (maxFlux - minFlux) * 0.15);
+  const yMin = minFlux - fluxPad;
+  const yMax = maxFlux + fluxPad;
+  const yRange = yMax > yMin ? yMax - yMin : 1.0;
+
+  // Background axes
+  spectrumCtx.strokeStyle = "#1e293b";
+  spectrumCtx.lineWidth = 1;
+  spectrumCtx.beginPath();
+  spectrumCtx.moveTo(padLeft, padTop);
+  spectrumCtx.lineTo(padLeft, h - padBottom);
+  spectrumCtx.lineTo(w - padRight, h - padBottom);
+  spectrumCtx.stroke();
+
+  // Wavelength ticks: 1.0, 2.0, 3.0, 4.0, 5.0 um
+  spectrumCtx.fillStyle = "#64748b";
+  spectrumCtx.font = "11px monospace";
+  spectrumCtx.textAlign = "center";
+  for (let wl = 1.0; wl <= 5.0; wl += 1.0) {
+    const x = padLeft + ((wl - wlMin) / wlRange) * plotW;
+    if (x >= padLeft && x <= w - padRight) {
+      spectrumCtx.beginPath();
+      spectrumCtx.strokeStyle = "#1e293b";
+      spectrumCtx.moveTo(x, padTop);
+      spectrumCtx.lineTo(x, h - padBottom);
+      spectrumCtx.stroke();
+      spectrumCtx.fillText(`${wl.toFixed(1)} \u03bcm`, x, h - padBottom + 16);
+    }
+  }
+
+  // Flux Y ticks
+  spectrumCtx.textAlign = "right";
+  const numYTicks = 4;
+  for (let i = 0; i <= numYTicks; i++) {
+    const frac = i / numYTicks;
+    const fluxVal = yMin + frac * yRange;
+    const y = h - padBottom - frac * plotH;
+    spectrumCtx.beginPath();
+    spectrumCtx.strokeStyle = "#1e293b";
+    spectrumCtx.moveTo(padLeft, y);
+    spectrumCtx.lineTo(w - padRight, y);
+    spectrumCtx.stroke();
+    spectrumCtx.fillText(fluxVal.toFixed(2), padLeft - 8, y + 4);
+  }
+
+  // Y-axis label
+  spectrumCtx.save();
+  spectrumCtx.translate(14, h / 2);
+  spectrumCtx.rotate(-Math.PI / 2);
+  spectrumCtx.textAlign = "center";
+  spectrumCtx.fillStyle = "#94a3b8";
+  spectrumCtx.font = "11px sans-serif";
+  spectrumCtx.fillText("Flux (MJy/sr)", 0, 0);
+  spectrumCtx.restore();
+
+  // Detector band markers (D1-D6)
+  const detectors = [
+    { name: "D1", min: 0.75, max: 1.09, color: "#38bdf8" },
+    { name: "D2", min: 1.10, max: 1.62, color: "#818cf8" },
+    { name: "D3", min: 1.63, max: 2.41, color: "#a855f7" },
+    { name: "D4", min: 2.42, max: 3.82, color: "#ec4899" },
+    { name: "D5", min: 3.83, max: 4.41, color: "#f43f5e" },
+    { name: "D6", min: 4.42, max: 5.00, color: "#ef4444" },
+  ];
+  detectors.forEach((det) => {
+    const x1 = padLeft + ((det.min - wlMin) / wlRange) * plotW;
+    const x2 = padLeft + ((det.max - wlMin) / wlRange) * plotW;
+    spectrumCtx.fillStyle = det.color;
+    spectrumCtx.globalAlpha = 0.15;
+    spectrumCtx.fillRect(x1, padTop, x2 - x1, 14);
+    spectrumCtx.globalAlpha = 1.0;
+    spectrumCtx.fillStyle = det.color;
+    spectrumCtx.font = "9px sans-serif";
+    spectrumCtx.textAlign = "center";
+    spectrumCtx.fillText(det.name, (x1 + x2) / 2, padTop + 10);
+  });
+
+  // Plot line
+  const coords = points.map((p, idx) => {
+    const x = padLeft + ((p.wavelength_um - wlMin) / wlRange) * plotW;
+    const y = h - padBottom - ((p.flux_mjy_sr - yMin) / yRange) * plotH;
+    return { x, y, point: p, idx };
+  });
+
+  spectrumCtx.beginPath();
+  spectrumCtx.strokeStyle = "#38bdf8";
+  spectrumCtx.lineWidth = 2;
+  coords.forEach((c, idx) => {
+    if (idx === 0) spectrumCtx.moveTo(c.x, c.y);
+    else spectrumCtx.lineTo(c.x, c.y);
+  });
+  spectrumCtx.stroke();
+
+  // Error bars and points
+  coords.forEach((c) => {
+    const isAct = c.idx === activeIndex;
+    const p = c.point;
+
+    if (p.sigma > 0) {
+      const yErrTop = h - padBottom - ((p.flux_mjy_sr + p.sigma - yMin) / yRange) * plotH;
+      const yErrBot = h - padBottom - ((p.flux_mjy_sr - p.sigma - yMin) / yRange) * plotH;
+      spectrumCtx.beginPath();
+      spectrumCtx.strokeStyle = isAct ? "#f59e0b" : "#0284c7";
+      spectrumCtx.lineWidth = 1;
+      spectrumCtx.moveTo(c.x, yErrTop);
+      spectrumCtx.lineTo(c.x, yErrBot);
+      spectrumCtx.moveTo(c.x - 3, yErrTop);
+      spectrumCtx.lineTo(c.x + 3, yErrTop);
+      spectrumCtx.moveTo(c.x - 3, yErrBot);
+      spectrumCtx.lineTo(c.x + 3, yErrBot);
+      spectrumCtx.stroke();
+    }
+
+    spectrumCtx.beginPath();
+    spectrumCtx.arc(c.x, c.y, isAct ? 6 : 3.5, 0, Math.PI * 2);
+    spectrumCtx.fillStyle = isAct ? "#f59e0b" : "#38bdf8";
+    spectrumCtx.fill();
+    if (isAct) {
+      spectrumCtx.strokeStyle = "#ffffff";
+      spectrumCtx.lineWidth = 2;
+      spectrumCtx.stroke();
+
+      spectrumCtx.fillStyle = "#f59e0b";
+      spectrumCtx.font = "bold 11px monospace";
+      spectrumCtx.textAlign = "center";
+      spectrumCtx.fillText(
+        `${p.wavelength_um.toFixed(2)}\u03bcm : ${p.flux_mjy_sr.toFixed(2)} MJy/sr`,
+        c.x,
+        Math.max(padTop + 24, c.y - 12)
+      );
+    }
+  });
+
+  // Vertical playhead line
+  if (activeIndex >= 0 && activeIndex < coords.length) {
+    const cur = coords[activeIndex];
+    spectrumCtx.beginPath();
+    spectrumCtx.strokeStyle = "#f59e0b";
+    spectrumCtx.lineWidth = 1.5;
+    spectrumCtx.setLineDash([4, 4]);
+    spectrumCtx.moveTo(cur.x, padTop);
+    spectrumCtx.lineTo(cur.x, h - padBottom);
+    spectrumCtx.stroke();
+    spectrumCtx.setLineDash([]);
+  }
+}
+
+function playAudioSonification() {
+  if (!currentSpectrumData || !currentSpectrumData.points || currentSpectrumData.points.length === 0) return;
+  stopAudioSonification();
+
+  const points = currentSpectrumData.points;
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) return;
+
+  audioContext = new AudioCtx();
+  if (audioContext.state === "suspended") {
+    audioContext.resume();
+  }
+
+  const fluxes = points.map((p) => p.flux_mjy_sr);
+  const minFlux = Math.min(...fluxes);
+  const maxFlux = Math.max(...fluxes);
+  const fluxRange = maxFlux > minFlux ? maxFlux - minFlux : 1.0;
+
+  const totalDuration = Math.max(2.0, Math.min(5.0, points.length * 0.25));
+  const timeStep = totalDuration / points.length;
+
+  const osc = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+
+  osc.type = "sine";
+  osc.connect(gain);
+  gain.connect(audioContext.destination);
+
+  const now = audioContext.currentTime;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.2, now + 0.05);
+
+  points.forEach((pt, i) => {
+    const t = now + i * timeStep;
+    const norm = (pt.flux_mjy_sr - minFlux) / fluxRange;
+    const freq = 220.0 * Math.pow(2.0, norm * 2.0); // 220 Hz to 880 Hz
+    if (i === 0) {
+      osc.frequency.setValueAtTime(freq, t);
+    } else {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(50, freq), t);
+    }
+  });
+
+  const endTime = now + totalDuration;
+  gain.gain.setValueAtTime(0.2, endTime - 0.05);
+  gain.gain.exponentialRampToValueAtTime(0.0001, endTime);
+
+  osc.start(now);
+  osc.stop(endTime);
+  audioNodes = [osc, gain];
+
+  if (playAudioBtn) playAudioBtn.classList.add("hidden");
+  if (stopAudioBtn) stopAudioBtn.classList.remove("hidden");
+
+  const startTime = performance.now();
+  function animatePlayhead() {
+    const elapsed = (performance.now() - startTime) / 1000.0;
+    const progress = elapsed / totalDuration;
+    if (progress >= 1.0) {
+      stopAudioSonification();
+      drawSpectrumPlot(currentSpectrumData, -1);
+      return;
+    }
+    const curIdx = Math.min(points.length - 1, Math.floor(progress * points.length));
+    drawSpectrumPlot(currentSpectrumData, curIdx);
+    audioPlayheadAnimId = requestAnimationFrame(animatePlayhead);
+  }
+  audioPlayheadAnimId = requestAnimationFrame(animatePlayhead);
+
+  osc.onended = () => {
+    stopAudioSonification();
+    drawSpectrumPlot(currentSpectrumData, -1);
+  };
+}
+
+function stopAudioSonification() {
+  if (audioPlayheadAnimId) {
+    cancelAnimationFrame(audioPlayheadAnimId);
+    audioPlayheadAnimId = null;
+  }
+  if (audioNodes && audioNodes.length > 0) {
+    audioNodes.forEach((node) => {
+      try {
+        if (node.stop) node.stop();
+        node.disconnect();
+      } catch {}
+    });
+    audioNodes = [];
+  }
+  if (audioContext) {
+    try {
+      audioContext.close();
+    } catch {}
+    audioContext = null;
+  }
+  if (playAudioBtn) playAudioBtn.classList.remove("hidden");
+  if (stopAudioBtn) stopAudioBtn.classList.add("hidden");
 }

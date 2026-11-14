@@ -142,3 +142,28 @@ class SequenceStatus(BaseModel):
     error: dict[str, str] | None = None
     created_at: str
     finished_at: str | None = None
+
+
+class SpectrumPoint(BaseModel):
+    """Single point in an extracted multi-wavelength spectrum (Slice 6)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    wavelength_um: float
+    flux_mjy_sr: float
+    sigma: float
+    mjd: float
+    detector: int
+
+
+class SpectrumResult(BaseModel):
+    """Spectrum response matching docs/API_SPEC.md section 3.8."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    key: str
+    x: float
+    y: float
+    radius_px: int
+    n_points: int
+    points: list[SpectrumPoint]

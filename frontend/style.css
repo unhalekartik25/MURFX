@@ -700,6 +700,99 @@ body.embed-mode .viewer-card {
   margin-bottom: 0.5rem;
 }
 
+/* Spectrum Card & Audio Sonification (Slice 6) */
+.spectrum-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.spectrum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.spectrum-header h3 {
+  font-size: 1.1rem;
+  color: var(--primary);
+  margin-bottom: 0.2rem;
+}
+
+.spectrum-subtext {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.spectrum-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spectrum-radius-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.spectrum-radius-label select {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  border-radius: 4px;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+}
+
+.spectrum-wrapper {
+  width: 100%;
+  background: #0b1120;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#spectrum-canvas {
+  width: 100%;
+  max-width: 880px;
+  height: auto;
+  display: block;
+}
+
+.spectrum-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.spectrum-pin-marker {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #f43f5e;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 5;
+  box-shadow: 0 0 6px #f43f5e;
+}
+
 .app-footer {
   padding: 1.5rem;
   border-top: 1px solid var(--border-color);

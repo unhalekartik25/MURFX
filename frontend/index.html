@@ -164,6 +164,9 @@
         <!-- Center Crosshair Layer -->
         <div id="crosshair-layer" class="crosshair-overlay"></div>
 
+        <!-- Spectrum Click Pin Marker (Slice 6) -->
+        <div id="spectrum-pin" class="spectrum-pin-marker hidden"></div>
+
         <!-- Compass Layer (N top, E left) -->
         <div id="compass-layer" class="compass-overlay">
           <span class="compass-n">N &uarr;</span>
@@ -243,6 +246,35 @@
       </div>
       <div class="sparkline-wrapper">
         <canvas id="sparkline-canvas" width="880" height="120"></canvas>
+      </div>
+    </section>
+
+    <!-- Pixel Spectrum Extraction & Audio Sonification (Slice 6) -->
+    <section id="spectrum-section" class="spectrum-card hidden" role="region" aria-label="Extracted Pixel Spectrum">
+      <div class="spectrum-header">
+        <div>
+          <h3>Extracted Pixel Spectrum (SED)</h3>
+          <span id="spectrum-coords-text" class="spectrum-subtext">Click any pixel on the sky view to extract its multi-wavelength SED</span>
+        </div>
+        <div class="spectrum-actions">
+          <label for="spectrum-radius-select" class="spectrum-radius-label">Aperture:
+            <select id="spectrum-radius-select">
+              <option value="1" selected>1 px (Point)</option>
+              <option value="2">2 px (3x3)</option>
+              <option value="3">3 px (5x5)</option>
+            </select>
+          </label>
+          <button type="button" id="play-audio-btn" class="btn btn-primary" title="Play Web Audio Sonification of Infrared Spectrum">&#9658; Play Audio</button>
+          <button type="button" id="stop-audio-btn" class="btn btn-secondary hidden" title="Stop Audio">&#9632; Stop</button>
+          <button type="button" id="close-spectrum-btn" class="btn btn-chip" title="Close Spectrum View">&times;</button>
+        </div>
+      </div>
+      <div class="spectrum-wrapper">
+        <canvas id="spectrum-canvas" width="880" height="200"></canvas>
+      </div>
+      <div class="spectrum-footer">
+        <span id="spectrum-stats">Wavelength: 0.75 - 5.00 &mu;m &bull; Multi-band SPHEREx Photometry</span>
+        <span id="spectrum-sonification-hint">Audio pitch maps to infrared flux &bull; Web Audio API</span>
       </div>
     </section>
 

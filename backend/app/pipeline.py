@@ -216,6 +216,21 @@ def run_sequence(
     # Sort frames chronologically
     processed_frames.sort(key=lambda f: f.mjd)
 
+    # Save spectral cube for pixel spectrum extraction (Slice 6)
+    try:
+        # np.flipud so cube row 0 matches PNG row 0 (North at top)
+        cube_data = np.stack([np.flipud(pf.data) for pf in processed_frames], axis=0)
+        cube_var = np.stack(
+            [np.flipud(pf.variance) if pf.variance is not None else np.zeros_like(pf.data) for pf in processed_frames],
+            axis=0,
+        )
+        wls = [pf.wavelength_um if pf.wavelength_um is not None else 0.0 for pf in processed_frames]
+        mjds = [pf.mjd for pf in processed_frames]
+        dets = [pf.detector for pf in processed_frames]
+        disk_cache.put_sequence_cube(key, cube_data, cube_var, wls, mjds, dets)
+    except Exception as e:
+        logger.warning("Failed to save spectral cube for key %s: %s", key, e)
+
     # Stage 6: Stretch & Render PNG frames
     if progress_cb:
         progress_cb("render", 0, len(processed_frames))

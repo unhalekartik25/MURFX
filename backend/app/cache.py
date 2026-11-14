@@ -127,6 +127,51 @@ class DiskCache:
         self._atomic_write_bytes(png_path, data)
         return png_path
 
+    def get_sequence_cube(self, key: str) -> dict[str, Any] | None:
+        """Retrieve numpy spectral cube arrays if saved (Slice 6)."""
+        cube_path = self.sequences_dir / key / "cube.npz"
+        if cube_path.exists():
+            try:
+                import numpy as np
+                with np.load(cube_path) as npz:
+                    return {
+                        "data": npz["data"],
+                        "var": npz["var"],
+                        "wavelengths": npz["wavelengths"],
+                        "mjds": npz["mjds"],
+                        "detectors": npz["detectors"],
+                    }
+            except Exception as e:
+                logger.warning("Error reading sequence cube %s: %s", key, e)
+        return None
+
+    def put_sequence_cube(
+        self,
+        key: str,
+        data: Any,
+        var: Any,
+        wavelengths: Any,
+        mjds: Any,
+        detectors: Any,
+    ) -> Path:
+        """Atomically write numpy spectral cube arrays (.npz) (Slice 6)."""
+        import io
+        import numpy as np
+        seq_dir = self.sequences_dir / key
+        seq_dir.mkdir(parents=True, exist_ok=True)
+        cube_path = seq_dir / "cube.npz"
+        bio = io.BytesIO()
+        np.savez_compressed(
+            bio,
+            data=np.asarray(data, dtype=np.float32),
+            var=np.asarray(var, dtype=np.float32),
+            wavelengths=np.asarray(wavelengths, dtype=np.float32),
+            mjds=np.asarray(mjds, dtype=np.float64),
+            detectors=np.asarray(detectors, dtype=np.int32),
+        )
+        self._atomic_write_bytes(cube_path, bio.getvalue())
+        return cube_path
+
     def _atomic_write_bytes(self, destination: Path, data: bytes) -> None:
         """Write to a temporary file in the same directory, then atomically replace destination."""
         dest_dir = destination.parent

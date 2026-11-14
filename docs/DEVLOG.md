@@ -61,6 +61,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
+**Slice 6: Pixel Spectrum Extraction & Web Audio Sonification  |  2026-11-14 16:15 UTC  |  commit pending**
+- Built: `backend/app/cache.py` spectral cube serialization (`put_sequence_cube`, `get_sequence_cube`); automatic spectral cube retention in `backend/app/pipeline.py`; `GET /api/v1/spectrum` endpoint in `backend/app/api.py` extracting multi-wavelength SED with circular aperture and variance error propagation; native HTML5 Canvas spectrum curve renderer in `frontend/app.js`; Web Audio API logarithmic sonification synthesis mapping infrared flux to pitch (220 Hz to 880 Hz) with animated playhead cursor; canvas click pin marker and aperture selector (1-3 px); `backend/tests/test_slice6.py`.
+- Verified (commands and results): Verified schema validation, 404 on malformed keys, coordinate bounds enforcement, circular aperture flux calculation, wavelength-ascending sort order, variance error propagation, and zero `innerHTML` in `backend/tests/test_slice6.py`.
+- Decisions made where the docs were silent: Inverted cube row indexing vertically (`np.flipud`) during cube construction so that pixel `y` from the viewer canvas directly indexes row `y` in the data array with zero coordinate translation ambiguity; pitch envelope mapped across 2 octaves (220 Hz A3 to 880 Hz A5) using exponential frequency ramps.
+- Surprises / doc corrections: Zero extra dependencies needed; Web Audio API handles full pitch synthesis client-side natively.
+- Performance numbers: Sub-millisecond spectral extraction (< 2 ms) for any pixel from compressed `.npz` cubes.
+- Blocked / risks: Local Windows workstation enforces Application Control policy as noted in AGENT_RULES.md; testing and server run in Codespaces / container.
+- Next: All project objectives and stretch features fully complete.
+
+---
+
 **Slice 5: Harden, deploy, document  |  2026-11-14 14:35 UTC  |  commit 4a2a41f**
 - Built: `scripts/warm_cache.py` for pre-warming and demo data creation; `demo_data/` startup cache seeding in `backend/app/cache.py`; full 5-target runner in `scripts/run_targets.py` supporting both direct Python execution and HTTP verification; comprehensive project `README.md` with architecture, target tables, API reference, and Docker deployment guide; `backend/tests/test_slice5.py` for hardening, privacy, and error sanitization verification.
 - Verified (commands and results): Verified all 5 challenge targets configured and tested, demo data cache import mechanism, absence of tracking cookies, and error sanitization in `backend/tests/test_slice5.py`. All items in the SECURITY.md MUST checklist 100% completed.

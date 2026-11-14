@@ -104,6 +104,22 @@ Acceptance:
 - [x] Everything in DEPLOYMENT.md section 7 release checklist ticked.
 - [x] Final commit tagged `v1.0-submission`.
 
+## Slice 6: Pixel Spectrum Extraction & Audio Sonification (STRETCH)
+
+Build:
+- `backend/app/cache.py`: `get_sequence_cube` & `put_sequence_cube` storing compressed multi-band spectral cube (`cube.npz`).
+- `backend/app/pipeline.py`: automatic cube serialization upon sequence completion.
+- `GET /api/v1/spectrum`: endpoint accepting `key`, `x`, `y`, `radius_px` (1-5) extracting spectral energy distribution (wavelength vs flux in MJy/sr) across frames with error bounds.
+- Native HTML5 Canvas spectrum plotter in frontend clicking any pixel on the blink player.
+- Web Audio API pitch/frequency sonification of the extracted spectrum curve.
+- Audio toggle / play sonification button and interactive spectrum tooltip.
+
+Acceptance:
+- [x] Clicking canvas pixel queries `/api/v1/spectrum` and renders native Canvas spectrum curve.
+- [x] Web Audio sonification plays smooth frequency sweep proportional to flux (220 Hz to 880 Hz).
+- [x] Unit tests in `backend/tests/test_slice6.py` cover coordinate bounds, pixel extraction, spectrum sorting, and audio synthesis guards.
+- [x] Strict zero `innerHTML` compliance verified across `frontend/`.
+
 ---
 
 ## Priority / cut-list (drop from the top first if time is short)

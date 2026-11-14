@@ -18,7 +18,7 @@ from backend.app.config import DETECTOR_METADATA, settings
 from backend.app.errors import AppError
 from backend.app.jobs import job_registry
 from backend.app.resolver import resolve_object_name
-from backend.app.schemas import SequenceRequest, SequenceStatus
+from backend.app.schemas import SequenceRequest, SequenceStatus, SpectrumPoint, SpectrumResult
 from backend.app.security import (
     SEQUENCE_KEY_REGEX,
     create_limiter,
@@ -266,4 +266,115 @@ async def get_sequence_frame_flags(
             "Cache-Control": "public, max-age=86400, immutable",
             "X-Content-Type-Options": "nosniff",
         },
+    )
+
+
+@router.get("/spectrum", tags=["spectrum"])
+async def get_pixel_spectrum(
+    key: str = Query(..., description="32-character hex sequence key"),
+    x: float = Query(..., ge=0.0, description="Grid pixel X coordinate"),
+    y: float = Query(..., ge=0.0, description="Grid pixel Y coordinate"),
+    radius_px: int = Query(1, ge=1, le=5, description="Aperture radius in pixels (1-5)"),
+) -> JSONResponse:
+    """Extract spectral energy distribution at (x, y) per docs/API_SPEC.md section 3.8."""
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    meta = disk_cache.get_sequence_meta(key)
+    if not meta:
+        raise AppError("NOT_FOUND", 404, f"Sequence key '{key}' not found.")
+
+    grid = meta.get("grid", {})
+    w = grid.get("width", 0)
+    h = grid.get("height", 0)
+    if w <= 0 or h <= 0 or x >= w or y >= h:
+        raise AppError(
+            "INVALID_PARAMETER",
+            422,
+            f"Pixel coordinates (x={x}, y={y}) out of grid bounds ({w}x{h}).",
+        )
+
+    cube = disk_cache.get_sequence_cube(key)
+    if cube is None:
+        raise AppError(
+            "NOT_FOUND",
+            404,
+            f"Spectral cube data not retained for sequence {key}.",
+        )
+
+    data = cube["data"]  # shape (N, H, W)
+    var = cube["var"]    # shape (N, H, W)
+    wavelengths = cube["wavelengths"]
+    mjds = cube["mjds"]
+    detectors = cube["detectors"]
+
+    import numpy as np
+
+    n_frames, cube_h, cube_w = data.shape
+    row = int(round(y))
+    col = int(round(x))
+
+    row = max(0, min(cube_h - 1, row))
+    col = max(0, min(cube_w - 1, col))
+
+    points: list[SpectrumPoint] = []
+
+    # Circular aperture
+    r_sq = radius_px * radius_px
+    rmin = max(0, row - radius_px)
+    rmax = min(cube_h, row + radius_px + 1)
+    cmin = max(0, col - radius_px)
+    cmax = min(cube_w, col + radius_px + 1)
+
+    rr, cc = np.ogrid[rmin:rmax, cmin:cmax]
+    circle_mask = (rr - row) ** 2 + (cc - col) ** 2 <= r_sq
+
+    for i in range(n_frames):
+        sub_data = data[i, rmin:rmax, cmin:cmax]
+        sub_var = var[i, rmin:rmax, cmin:cmax]
+
+        valid = circle_mask & np.isfinite(sub_data)
+        if not np.any(valid):
+            continue
+
+        valid_data = sub_data[valid]
+        flux = float(np.mean(valid_data))
+
+        valid_var = sub_var[valid]
+        if np.any(np.isfinite(valid_var)):
+            finite_var = valid_var[np.isfinite(valid_var)]
+            sigma = float(np.sqrt(np.mean(finite_var) / len(finite_var))) if len(finite_var) > 0 else 0.0
+        else:
+            sigma = 0.0
+
+        wl = float(wavelengths[i]) if i < len(wavelengths) else 0.0
+        mjd = float(mjds[i]) if i < len(mjds) else 0.0
+        det = int(detectors[i]) if i < len(detectors) else 1
+
+        points.append(
+            SpectrumPoint(
+                wavelength_um=round(wl, 4),
+                flux_mjy_sr=round(flux, 4),
+                sigma=round(sigma, 4),
+                mjd=round(mjd, 4),
+                detector=det,
+            )
+        )
+
+    # Sort points by wavelength ascending
+    points.sort(key=lambda pt: pt.wavelength_um)
+
+    res = SpectrumResult(
+        key=key,
+        x=round(x, 2),
+        y=round(y, 2),
+        radius_px=radius_px,
+        n_points=len(points),
+        points=points,
+    )
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=res.model_dump(),
+        headers={"Cache-Control": "public, max-age=3600"},
     )
