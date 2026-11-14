@@ -148,6 +148,7 @@
         <label><input type="checkbox" id="toggle-crosshair" checked> Crosshair</label>
         <label><input type="checkbox" id="toggle-compass" checked> Compass</label>
         <label><input type="checkbox" id="toggle-scale" checked> Scale Bar</label>
+        <label><input type="checkbox" id="toggle-flags"> Flags Mask</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
         <span id="hover-coords" class="hover-coords">RA: --, Dec: --</span>
       </div>
@@ -155,6 +156,7 @@
       <!-- Main Canvas Container -->
       <div class="canvas-wrapper" id="canvas-container" tabindex="0" title="Click or use keyboard shortcuts (Space, Left/Right, [, ], L)">
         <canvas id="blink-canvas" width="400" height="400"></canvas>
+        <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
         
         <!-- Center Crosshair Layer -->
         <div id="crosshair-layer" class="crosshair-overlay"></div>
@@ -217,6 +219,42 @@
         <span id="detail-exposures">Exposures: --</span> &bull;
         <span id="detail-flagged">Flagged: --</span> &bull;
         <span id="detail-version">Version: --</span>
+      </div>
+    </section>
+
+    <!-- Sparkline Section for Variable Stars -->
+    <section id="sparkline-section" class="sparkline-card hidden">
+      <div class="sparkline-header">
+        <h3>Central 3x3 Flux Sparkline</h3>
+        <span class="sparkline-caveat">Flux vs Time (MJD) &bull; <em>Note: values mix wavelengths across frames</em></span>
+      </div>
+      <div class="sparkline-wrapper">
+        <canvas id="sparkline-canvas" width="880" height="120"></canvas>
+      </div>
+    </section>
+
+    <!-- Frame Quality Metadata Table -->
+    <section id="table-section" class="table-card hidden">
+      <div class="table-header">
+        <h3>Frame Quality Metadata</h3>
+        <span id="truncation-notice" class="truncation-badge hidden"></span>
+      </div>
+      <div class="table-wrapper">
+        <table id="frames-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date (UTC)</th>
+              <th>MJD</th>
+              <th>&lambda; (&mu;m)</th>
+              <th>Det</th>
+              <th>Exposures</th>
+              <th>Flagged</th>
+              <th>Version</th>
+            </tr>
+          </thead>
+          <tbody id="frames-table-body"></tbody>
+        </table>
       </div>
     </section>
 

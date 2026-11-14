@@ -17,7 +17,6 @@ from backend.app.config import settings
 logger = logging.getLogger("spherex.processing")
 
 # Bitmask constants per docs/DATA_SOURCES.md section 4
-# Minimal: bits 1, 2, 6, 9, 10, 11, 15
 MASK_MINIMAL = (
     (1 << 1)   # OVERFLOW
     | (1 << 2)   # SUR_ERROR
@@ -51,6 +50,7 @@ class ProcessedFrame:
     """One aligned frame ready for stretch and rendering."""
 
     data: np.ndarray  # float32 2D array on target grid, NaN where invalid
+    variance: np.ndarray | None  # float32 variance array on target grid
     mjd: float
     wavelength_um: float | None
     detector: int
@@ -60,14 +60,18 @@ class ProcessedFrame:
     version: str | None
     flag_fraction: float
     center_value: float | None
+    flags_mask: np.ndarray | None = None  # boolean mask on target grid (True = bad pixel)
 
 
 def mask_flags(
     image: np.ndarray,
     flags: np.ndarray,
     mask_level: Literal["minimal", "strict"] = "minimal",
-) -> tuple[np.ndarray, float]:
-    """Mask unusable pixels with NaN per masking policy (docs/DATA_SOURCES.md section 4)."""
+) -> tuple[np.ndarray, np.ndarray, float]:
+    """Mask unusable pixels with NaN per masking policy (docs/DATA_SOURCES.md section 4).
+
+    Returns (cleaned_image, bad_mask, flag_fraction).
+    """
     bitmask = MASK_STRICT if mask_level == "strict" else MASK_MINIMAL
     bad_mask = (flags & bitmask) != 0
 
@@ -77,7 +81,7 @@ def mask_flags(
 
     cleaned = image.copy()
     cleaned[bad_mask] = np.nan
-    return cleaned, flag_fraction
+    return cleaned, bad_mask, flag_fraction
 
 
 def subtract_background(
@@ -95,7 +99,6 @@ def subtract_background(
         med = float(np.median(finite_diff)) if finite_diff.size > 0 else 0.0
         return diff - med
 
-    # Default: "median"
     finite_px = image[np.isfinite(image)]
     med = float(np.median(finite_px)) if finite_px.size > 0 else 0.0
     return image - med
@@ -150,13 +153,12 @@ def reproject_frame(
         shape_out=shape_out,
         order="bilinear",
     )
-    # Set pixels outside cutout coverage to NaN
     reprojected[footprint <= 0] = np.nan
     return reprojected.astype(np.float32)
 
 
 def compute_center_value(data: np.ndarray) -> float | None:
-    """Compute mean flux of central 3x3 grid pixels for the optional sparkline (API_SPEC section 3.5)."""
+    """Compute mean flux of central 3x3 grid pixels for the sparkline (API_SPEC section 3.5)."""
     h, w = data.shape
     cy, cx = h // 2, w // 2
     y0, y1 = max(0, cy - 1), min(h, cy + 2)
@@ -172,11 +174,13 @@ def stack_time_bins(
     frames: list[ProcessedFrame],
     bin_days: float,
 ) -> list[ProcessedFrame]:
-    """Co-add frames into time bins of bin_days duration using NaN-ignoring mean."""
+    """Co-add frames into time bins using inverse-variance weighted mean (docs/ARCHITECTURE.md section 5 step 8).
+
+    Guarantees ~sqrt(N) SNR improvement over N stacked uncorrelated frames.
+    """
     if not frames or bin_days <= 0:
         return frames
 
-    # Sort frames by MJD
     frames_sorted = sorted(frames, key=lambda f: f.mjd)
     min_mjd = frames_sorted[0].mjd
     max_mjd = frames_sorted[-1].mjd
@@ -189,10 +193,30 @@ def stack_time_bins(
         bin_members = [f for f in frames_sorted if current_bin_start <= f.mjd < bin_end]
 
         if bin_members:
-            # Stack data
             stack_shape = bin_members[0].data.shape
-            cube = np.stack([f.data for f in bin_members], axis=0)
-            stacked_data = np.nanmean(cube, axis=0)
+            cube_data = np.stack([f.data for f in bin_members], axis=0)  # (N, H, W)
+
+            # Check if variance arrays are available
+            has_var = all(f.variance is not None for f in bin_members)
+            if has_var:
+                cube_var = np.stack([f.variance for f in bin_members], axis=0)  # type: ignore[misc]
+                # Weights = 1 / variance
+                weights = 1.0 / np.maximum(cube_var, 1e-8)
+            else:
+                weights = np.ones_like(cube_data)
+
+            # Mask out NaNs
+            valid_mask = np.isfinite(cube_data)
+            weights[~valid_mask] = 0.0
+
+            sum_weights = np.sum(weights, axis=0)
+            with np.errstate(divide="ignore", invalid="ignore"):
+                weighted_data = np.where(valid_mask, cube_data * weights, 0.0)
+                stacked_data = np.sum(weighted_data, axis=0) / sum_weights
+                stacked_data[sum_weights <= 0] = np.nan
+
+                stacked_var = 1.0 / sum_weights
+                stacked_var[sum_weights <= 0] = np.nan
 
             mean_mjd = float(np.mean([f.mjd for f in bin_members]))
             mean_wl = (
@@ -200,6 +224,7 @@ def stack_time_bins(
                 if any(f.wavelength_um is not None for f in bin_members)
                 else None
             )
+
             obs_ids: list[str] = []
             for f in bin_members:
                 if f.obs_id:
@@ -207,9 +232,16 @@ def stack_time_bins(
                 if f.obs_ids:
                     obs_ids.extend(f.obs_ids)
 
+            # Combine flag masks with logical OR
+            combined_flags = None
+            if any(f.flags_mask is not None for f in bin_members):
+                flag_masks = [f.flags_mask for f in bin_members if f.flags_mask is not None]
+                combined_flags = np.any(np.stack(flag_masks, axis=0), axis=0)
+
             stacked_frames.append(
                 ProcessedFrame(
                     data=stacked_data.astype(np.float32),
+                    variance=stacked_var.astype(np.float32),
                     mjd=round(mean_mjd, 4),
                     wavelength_um=round(mean_wl, 3) if mean_wl is not None else None,
                     detector=bin_members[0].detector,
@@ -219,6 +251,7 @@ def stack_time_bins(
                     version=bin_members[0].version,
                     flag_fraction=round(float(np.mean([f.flag_fraction for f in bin_members])), 4),
                     center_value=compute_center_value(stacked_data),
+                    flags_mask=combined_flags,
                 )
             )
 
@@ -266,12 +299,10 @@ def stretch_frames(
         else:
             frame_vmin, frame_vmax = vmin, vmax
 
-        # Asinh non-linear stretch
         scale = max(0.001, (frame_vmax - frame_vmin) / 10.0)
         norm = np.arcsinh((arr - frame_vmin) / scale) / np.arcsinh((frame_vmax - frame_vmin) / scale)
         norm_scaled = np.clip(norm * 255.0, 0.0, 255.0)
 
-        # Handle NaNs: set value to 0
         norm_scaled = np.nan_to_num(norm_scaled, nan=0.0)
         uint8_images.append(norm_scaled.astype(np.uint8))
 

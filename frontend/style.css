@@ -524,6 +524,124 @@ body.embed-mode .viewer-card {
   padding: 0.25rem 0.5rem;
 }
 
+.flags-overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+}
+
+/* Sparkline Card */
+.sparkline-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.sparkline-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.5rem;
+}
+
+.sparkline-header h3 {
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.sparkline-caveat {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.sparkline-wrapper {
+  background: #0f172a;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+
+#sparkline-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Metadata Quality Table */
+.table-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+
+.table-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.table-header h3 {
+  font-size: 1rem;
+  color: var(--text-main);
+}
+
+.truncation-badge {
+  font-size: 0.75rem;
+  background: #0369a1;
+  color: #e0f2fe;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+}
+
+.table-wrapper {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+}
+
+#frames-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-family: monospace;
+  text-align: left;
+}
+
+#frames-table th {
+  background: #0f172a;
+  color: var(--primary);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+#frames-table td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid #1e293b;
+  color: var(--text-main);
+}
+
+#frames-table tr:hover {
+  background: #1e293b;
+}
+
+#frames-table tr.active-row {
+  background: #1e3a5f;
+  color: #38bdf8;
+  font-weight: bold;
+}
+
 /* Embed Modal Box */
 .embed-box {
   background: var(--card-bg);

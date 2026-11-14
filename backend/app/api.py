@@ -227,3 +227,27 @@ async def get_sequence_frame(
             "X-Content-Type-Options": "nosniff",
         },
     )
+
+
+@router.get("/sequences/{key}/frames/{index}/flags.png", tags=["sequences"])
+async def get_sequence_frame_flags(
+    request: Request,
+    key: str = FPath(..., description="32-character hex sequence key"),
+    index: int = FPath(..., ge=0, description="0-based frame index"),
+) -> FileResponse:
+    """Serve optional bad-pixel mask overlay PNG."""
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    flags_path = disk_cache.get_frame_flags_path(key, index)
+    if not flags_path or not flags_path.exists():
+        raise AppError("NOT_FOUND", 404, f"Flags mask {index} for sequence {key} not found.")
+
+    return FileResponse(
+        path=str(flags_path),
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=86400, immutable",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )

@@ -58,6 +58,15 @@ const errorMessage = document.getElementById("error-message");
 
 const canvas = document.getElementById("blink-canvas");
 const ctx = canvas.getContext("2d");
+const flagsCanvas = document.getElementById("flags-canvas");
+const flagsCtx = flagsCanvas ? flagsCanvas.getContext("2d") : null;
+const sparklineCanvas = document.getElementById("sparkline-canvas");
+const sparklineCtx = sparklineCanvas ? sparklineCanvas.getContext("2d") : null;
+const sparklineSection = document.getElementById("sparkline-section");
+const tableSection = document.getElementById("table-section");
+const framesTableBody = document.getElementById("frames-table-body");
+const truncationNotice = document.getElementById("truncation-notice");
+
 const canvasContainer = document.getElementById("canvas-container");
 const crosshairLayer = document.getElementById("crosshair-layer");
 const compassLayer = document.getElementById("compass-layer");
@@ -69,6 +78,7 @@ const hoverCoords = document.getElementById("hover-coords");
 const toggleCrosshair = document.getElementById("toggle-crosshair");
 const toggleCompass = document.getElementById("toggle-compass");
 const toggleScale = document.getElementById("toggle-scale");
+const toggleFlags = document.getElementById("toggle-flags");
 const toggleSmooth = document.getElementById("toggle-smooth");
 
 const metaMjd = document.getElementById("meta-mjd");
@@ -154,6 +164,14 @@ function initEventListeners() {
   toggleScale.addEventListener("change", () => {
     scaleLayer.classList.toggle("hidden", !toggleScale.checked);
   });
+  if (toggleFlags && flagsCanvas) {
+    toggleFlags.addEventListener("change", () => {
+      flagsCanvas.classList.toggle("hidden", !toggleFlags.checked);
+      if (toggleFlags.checked) {
+        loadAndDrawFlags(currentFrameIndex);
+      }
+    });
+  }
   toggleSmooth.addEventListener("change", () => {
     canvas.style.imageRendering = toggleSmooth.checked ? "auto" : "pixelated";
   });
@@ -451,11 +469,35 @@ async function loadSequenceResult(result) {
     warningsSection.classList.remove("hidden");
   }
 
+  // Truncation notice
+  if (result.truncated && truncationNotice) {
+    truncationNotice.textContent = `Showing ${result.n_frames} of ${result.n_available} exposures, evenly spaced in time`;
+    truncationNotice.classList.remove("hidden");
+  } else if (truncationNotice) {
+    truncationNotice.classList.add("hidden");
+  }
+
   // Set canvas size from grid dimensions
   if (result.grid) {
     canvas.width = result.grid.width;
     canvas.height = result.grid.height;
+    if (flagsCanvas) {
+      flagsCanvas.width = result.grid.width;
+      flagsCanvas.height = result.grid.height;
+    }
     updateScaleBar(result.grid.pixscale_arcsec);
+  }
+
+  // Render Table Rows
+  renderTableRows(frames);
+  if (tableSection) tableSection.classList.remove("hidden");
+
+  // Render Sparkline
+  if (sparklineCanvas && frames.some((f) => f.center_value !== null)) {
+    drawSparkline(frames, 0);
+    if (sparklineSection) sparklineSection.classList.remove("hidden");
+  } else if (sparklineSection) {
+    sparklineSection.classList.add("hidden");
   }
 
   // Preload frame PNG images
@@ -554,6 +596,149 @@ function showFrame(index) {
     detailFlagged.textContent = `Flagged: ${(f.flag_fraction * 100).toFixed(1)}%`;
     detailVersion.textContent = `Version: ${f.version || "l2b"}`;
   }
+
+  // Update active table row
+  if (framesTableBody) {
+    const rows = framesTableBody.querySelectorAll("tr");
+    rows.forEach((r, idx) => {
+      r.classList.toggle("active-row", idx === index);
+    });
+  }
+
+  // Update Sparkline Cursor
+  if (sparklineCanvas && frames.some((f) => f.center_value !== null)) {
+    drawSparkline(frames, index);
+  }
+
+  // Draw flags mask if enabled
+  if (toggleFlags && toggleFlags.checked) {
+    loadAndDrawFlags(index);
+  }
+}
+
+async function loadAndDrawFlags(index) {
+  if (!flagsCtx || !flagsCanvas || !currentSequenceKey) return;
+  const flagsUrl = `/api/v1/sequences/${currentSequenceKey}/frames/${index}/flags.png`;
+  const flagImg = new Image();
+  flagImg.onload = () => {
+    flagsCtx.clearRect(0, 0, flagsCanvas.width, flagsCanvas.height);
+    flagsCtx.drawImage(flagImg, 0, 0, flagsCanvas.width, flagsCanvas.height);
+  };
+  flagImg.src = flagsUrl;
+}
+
+function renderTableRows(frameList) {
+  if (!framesTableBody) return;
+  // Clear existing rows without innerHTML
+  while (framesTableBody.firstChild) {
+    framesTableBody.removeChild(framesTableBody.firstChild);
+  }
+
+  frameList.forEach((f, idx) => {
+    const tr = document.createElement("tr");
+    tr.style.cursor = "pointer";
+    tr.addEventListener("click", () => showFrame(idx));
+
+    const tdIdx = document.createElement("td");
+    tdIdx.textContent = (f.index + 1).toString();
+
+    const tdDate = document.createElement("td");
+    tdDate.textContent = f.iso.slice(0, 10);
+
+    const tdMjd = document.createElement("td");
+    tdMjd.textContent = f.mjd.toFixed(2);
+
+    const tdWl = document.createElement("td");
+    tdWl.textContent = f.wavelength_um ? f.wavelength_um.toFixed(2) : "n/a";
+
+    const tdDet = document.createElement("td");
+    tdDet.textContent = `D${f.detector}`;
+
+    const tdExp = document.createElement("td");
+    tdExp.textContent = f.n_exposures.toString();
+
+    const tdFlag = document.createElement("td");
+    tdFlag.textContent = `${(f.flag_fraction * 100).toFixed(1)}%`;
+
+    const tdVer = document.createElement("td");
+    tdVer.textContent = f.version || "l2b";
+
+    tr.appendChild(tdIdx);
+    tr.appendChild(tdDate);
+    tr.appendChild(tdMjd);
+    tr.appendChild(tdWl);
+    tr.appendChild(tdDet);
+    tr.appendChild(tdExp);
+    tr.appendChild(tdFlag);
+    tr.appendChild(tdVer);
+
+    framesTableBody.appendChild(tr);
+  });
+}
+
+function drawSparkline(frameList, activeIdx) {
+  if (!sparklineCtx || !sparklineCanvas) return;
+  const values = frameList.map((f) => f.center_value).filter((v) => v !== null && v !== undefined);
+  if (values.length < 2) return;
+
+  const w = sparklineCanvas.width;
+  const h = sparklineCanvas.height;
+  sparklineCtx.clearRect(0, 0, w, h);
+
+  const padding = 20;
+  const graphW = w - padding * 2;
+  const graphH = h - padding * 2;
+
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const valRange = maxVal > minVal ? maxVal - minVal : 1.0;
+
+  // Draw background grid lines
+  sparklineCtx.strokeStyle = "#243049";
+  sparklineCtx.lineWidth = 1;
+  sparklineCtx.beginPath();
+  sparklineCtx.moveTo(padding, padding);
+  sparklineCtx.lineTo(padding, h - padding);
+  sparklineCtx.lineTo(w - padding, h - padding);
+  sparklineCtx.stroke();
+
+  // Plot line
+  sparklineCtx.beginPath();
+  sparklineCtx.strokeStyle = "#38bdf8";
+  sparklineCtx.lineWidth = 2;
+
+  const pts = [];
+  frameList.forEach((f, i) => {
+    const val = f.center_value !== null && f.center_value !== undefined ? f.center_value : minVal;
+    const x = padding + (i / (frameList.length - 1)) * graphW;
+    const y = h - padding - ((val - minVal) / valRange) * graphH;
+    pts.push({ x, y, idx: i, val });
+    if (i === 0) {
+      sparklineCtx.moveTo(x, y);
+    } else {
+      sparklineCtx.lineTo(x, y);
+    }
+  });
+  sparklineCtx.stroke();
+
+  // Draw point dots
+  pts.forEach((pt) => {
+    sparklineCtx.beginPath();
+    const isActive = pt.idx === activeIdx;
+    sparklineCtx.arc(pt.x, pt.y, isActive ? 5 : 3, 0, Math.PI * 2);
+    sparklineCtx.fillStyle = isActive ? "#f59e0b" : "#38bdf8";
+    sparklineCtx.fill();
+    if (isActive) {
+      sparklineCtx.strokeStyle = "#ffffff";
+      sparklineCtx.lineWidth = 1.5;
+      sparklineCtx.stroke();
+
+      // Label current value
+      sparklineCtx.fillStyle = "#f59e0b";
+      sparklineCtx.font = "11px monospace";
+      sparklineCtx.fillText(`${pt.val.toFixed(2)} MJy/sr`, pt.x - 20, Math.max(12, pt.y - 8));
+    }
+  });
 }
 
 function stepFrame(delta) {

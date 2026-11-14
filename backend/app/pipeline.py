@@ -28,7 +28,7 @@ from backend.app.processing import (
     stretch_frames,
     subtract_background,
 )
-from backend.app.render import render_to_png_bytes
+from backend.app.render import render_flags_png, render_to_png_bytes
 from backend.app.schemas import (
     FrameInfo,
     GridInfo,
@@ -156,10 +156,10 @@ def run_sequence(
     reprojected_frames: list[ProcessedFrame] = []
     for idx, cutout in enumerate(parsed_cutouts):
         # 5a. Clean: Mask unusable flags and subtract background
-        cleaned_image, flag_fraction = mask_flags(cutout.image, cutout.flags, req.mask_level)
+        cleaned_image, bad_mask, flag_fraction = mask_flags(cutout.image, cutout.flags, req.mask_level)
         bg_subtracted = subtract_background(cleaned_image, cutout.zodi, req.background)
 
-        # 5b. Reproject onto common grid
+        # 5b. Reproject data, variance, and flag mask onto common grid
         grid_data = reproject_frame(
             data=bg_subtracted,
             data_wcs=cutout.wcs,
@@ -167,11 +167,27 @@ def run_sequence(
             shape_out=(grid_h, grid_w),
         )
 
+        grid_var = reproject_frame(
+            data=cutout.variance,
+            data_wcs=cutout.wcs,
+            grid_wcs=grid_wcs,
+            shape_out=(grid_h, grid_w),
+        )
+
+        grid_flags_float = reproject_frame(
+            data=bad_mask.astype(np.float32),
+            data_wcs=cutout.wcs,
+            grid_wcs=grid_wcs,
+            shape_out=(grid_h, grid_w),
+        )
+        grid_flags_mask = np.nan_to_num(grid_flags_float, nan=0.0) > 0.1
+
         center_val = compute_center_value(grid_data)
 
         reprojected_frames.append(
             ProcessedFrame(
                 data=grid_data,
+                variance=grid_var,
                 mjd=cutout.ref.mjd,
                 wavelength_um=cutout.wavelength_um,
                 detector=cutout.detector,
@@ -181,6 +197,7 @@ def run_sequence(
                 version=cutout.version,
                 flag_fraction=flag_fraction,
                 center_value=center_val,
+                flags_mask=grid_flags_mask,
             )
         )
 
@@ -210,6 +227,11 @@ def run_sequence(
         valid_mask = np.isfinite(pf.data)
         png_bytes = render_to_png_bytes(arr_uint8, valid_mask)
         disk_cache.put_frame_png(key, i, png_bytes)
+
+        # Render optional flags overlay
+        if pf.flags_mask is not None:
+            flags_bytes = render_flags_png(pf.flags_mask)
+            disk_cache.put_frame_flags_png(key, i, flags_bytes)
 
         # Convert MJD to ISO string
         try:

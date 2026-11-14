@@ -1,4 +1,4 @@
-"""PNG rendering of 2D image arrays.
+"""PNG rendering of 2D image arrays and flag masks.
 
 Specification: docs/ARCHITECTURE.md section 5 step 10:
 - Mode LA (Grayscale + Alpha)
@@ -32,6 +32,24 @@ def render_to_png_bytes(
     la_array = np.dstack((gray, alpha))
 
     img = Image.fromarray(la_array, mode="LA")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG", optimize=True)
+    return buf.getvalue()
+
+
+def render_flags_png(flags_mask: np.ndarray) -> bytes:
+    """Render a boolean flag mask as an RGBA PNG overlay with semi-transparent red on bad pixels."""
+    if flags_mask.ndim != 2:
+        raise ValueError(f"Expected 2D array, got shape {flags_mask.shape}")
+
+    h, w = flags_mask.shape
+    flipped_mask = np.flipud(flags_mask)
+
+    rgba = np.zeros((h, w, 4), dtype=np.uint8)
+    # Bad pixels marked with semi-transparent red (R=239, G=68, B=68, A=160)
+    rgba[flipped_mask] = [239, 68, 68, 160]
+
+    img = Image.fromarray(rgba, mode="RGBA")
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()

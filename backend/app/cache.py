@@ -99,6 +99,19 @@ class DiskCache:
         self._atomic_write_bytes(png_path, data)
         return png_path
 
+    def get_frame_flags_path(self, key: str, index: int) -> Path | None:
+        """Get path to a rendered flags mask PNG if it exists."""
+        png_path = self.sequences_dir / key / f"{index}_flags.png"
+        return png_path if png_path.exists() else None
+
+    def put_frame_flags_png(self, key: str, index: int, data: bytes) -> Path:
+        """Atomically write a rendered flags mask PNG."""
+        seq_dir = self.sequences_dir / key
+        seq_dir.mkdir(parents=True, exist_ok=True)
+        png_path = seq_dir / f"{index}_flags.png"
+        self._atomic_write_bytes(png_path, data)
+        return png_path
+
     def _atomic_write_bytes(self, destination: Path, data: bytes) -> None:
         """Write to a temporary file in the same directory, then atomically replace destination."""
         dest_dir = destination.parent

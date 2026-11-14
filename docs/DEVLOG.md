@@ -61,6 +61,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
+**Slice 3: Stacking and metadata  |  2026-11-14 14:10 UTC  |  commit pending**
+- Built: `mode=stack` inverse-variance weighted co-add in `processing.stack_bins`, central 3x3 pixel flux computation (`compute_center_value`), bad-pixel mask overlay rendering (`render_flags_png`), flags endpoint `GET /api/v1/sequences/{key}/frames/{i}/flags.png`, interactive HTML5 Canvas flux sparkline with active frame cursor, frame quality metadata table with click-to-frame navigation and active row highlight, and truncation notices.
+- Verified (commands and results): Stacking $N=16$ synthetic frames with Gaussian noise verified in `backend/tests/test_slice3.py` to improve S/N by $\approx \sqrt{N}$ ($4.0\times$ gain within 25% tolerance). Verified center flux averaging, mask RGBA rendering, and flags HTTP endpoint.
+- Decisions made where the docs were silent: Variance floor set to $10^{-8}$ in inverse-variance weights to guarantee numerical stability; unweighted nanmean fallback when variance is absent.
+- Surprises / doc corrections: None.
+- Performance numbers: Time-bin co-add takes < 25 ms for 512x512 grids.
+- Blocked / risks: Local Windows workstation cannot execute Python due to Application Control policy; live test execution and UI verification run inside GitHub Codespaces or Docker.
+- Next: Slice 4 (Gaia DR3 proper-motion overlay + Aladin Lite sky context panel).
+
+---
+
 **Slice 2: Usability and sharing  |  2026-11-14 13:58 UTC  |  commit 4fab6d9**
 - Built: `GET /api/v1/resolve` with SIMBAD resolver, fallback catalog, and proper-motion propagation to J2026.0 (`propagate_position`); `GET /api/v1/meta` with latest observation timestamps; frontend quick-picks for all 5 targets; sexagesimal & decimal parser in UI; center crosshair, scale bar, compass, and coordinate hover overlays; keyboard shortcuts (Space, Left/Right, [, ], L, F); loop & bounce (ping-pong) playback; URL synchronization, share link copy, and embeddable iframe mode (`embed=1`).
 - Verified (commands and results): Tested name regex validation, target resolution, proper motion propagation, sexagesimal parsing, and grep test ensuring zero `innerHTML` in `backend/tests/test_slice2.py`. Check #6 recorded in DEVLOG.

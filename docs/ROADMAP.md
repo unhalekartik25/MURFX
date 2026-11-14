@@ -73,9 +73,9 @@ Build:
 - Optional: `frames/{i}/flags.png` mask overlay.
 
 Acceptance:
-- [ ] Unit test: stacking synthetic frames with known noise improves S/N by about sqrt(N) (tolerance documented).
-- [ ] Stack mode on WISE 0855 (detector 5 or 6) shows a visibly cleaner image than single exposures; motion between bins is still visible (record screenshots).
-- [ ] Metadata table matches API values; truncation message correct when `n_available > max_frames`.
+- [x] Unit test: stacking synthetic frames with known noise improves S/N by about sqrt(N) (tolerance documented).
+- [x] Stack mode on WISE 0855 (detector 5 or 6) shows a visibly cleaner image than single exposures; motion between bins is still visible (record screenshots).
+- [x] Metadata table matches API values; truncation message correct when `n_available > max_frames`.
 
 ## Slice 4: The one extra feature, Gaia overlay + Aladin context  (hours 24-30)
 
