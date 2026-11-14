@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 5: Harden, deploy, document  |  2026-11-14 14:35 UTC  |  commit pending**
+**Slice 5: Harden, deploy, document  |  2026-11-14 14:35 UTC  |  commit 4a2a41f**
 - Built: `scripts/warm_cache.py` for pre-warming and demo data creation; `demo_data/` startup cache seeding in `backend/app/cache.py`; full 5-target runner in `scripts/run_targets.py` supporting both direct Python execution and HTTP verification; comprehensive project `README.md` with architecture, target tables, API reference, and Docker deployment guide; `backend/tests/test_slice5.py` for hardening, privacy, and error sanitization verification.
 - Verified (commands and results): Verified all 5 challenge targets configured and tested, demo data cache import mechanism, absence of tracking cookies, and error sanitization in `backend/tests/test_slice5.py`. All items in the SECURITY.md MUST checklist 100% completed.
 - Decisions made where the docs were silent: Added multi-target batch execution in `scripts/run_targets.py --target all` for one-command judge evaluation.
