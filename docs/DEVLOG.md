@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 3: Stacking and metadata  |  2026-11-14 14:10 UTC  |  commit pending**
+**Slice 3: Stacking and metadata  |  2026-11-14 14:10 UTC  |  commit 81a9f96**
 - Built: `mode=stack` inverse-variance weighted co-add in `processing.stack_bins`, central 3x3 pixel flux computation (`compute_center_value`), bad-pixel mask overlay rendering (`render_flags_png`), flags endpoint `GET /api/v1/sequences/{key}/frames/{i}/flags.png`, interactive HTML5 Canvas flux sparkline with active frame cursor, frame quality metadata table with click-to-frame navigation and active row highlight, and truncation notices.
 - Verified (commands and results): Stacking $N=16$ synthetic frames with Gaussian noise verified in `backend/tests/test_slice3.py` to improve S/N by $\approx \sqrt{N}$ ($4.0\times$ gain within 25% tolerance). Verified center flux averaging, mask RGBA rendering, and flags HTTP endpoint.
 - Decisions made where the docs were silent: Variance floor set to $10^{-8}$ in inverse-variance weights to guarantee numerical stability; unweighted nanmean fallback when variance is absent.
