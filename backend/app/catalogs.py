@@ -252,11 +252,13 @@ def query_cadc_neossat(ra: float, dec: float, radius_arcmin: float) -> dict[str,
 
     result = {
         "catalog": "NEOSSat (CADC)",
+        "agency": "Canadian Space Agency (CSA) / CADC",
         "ra": round(ra, 6),
         "dec": round(dec, 6),
         "radius_arcmin": round(radius_arcmin, 2),
         "count": len(records),
         "observations": records,
+        "sources": records,
     }
 
     neossat_cache[cache_key] = result

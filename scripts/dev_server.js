@@ -319,9 +319,202 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({ key, x, y, radius_px: 1, n_points: points.length, points }));
   }
 
-  if (pathname.startsWith("/api/v1/catalog/")) {
+  // NASA AllWISE (IRSA J2010.0 Historical Baseline)
+  if (pathname === "/api/v1/catalog/wise") {
+    const ra = parseFloat(parsedUrl.searchParams.get("ra") || "133.795125");
+    const dec = parseFloat(parsedUrl.searchParams.get("dec") || "-7.245147");
+    const radiusArcmin = parseFloat(parsedUrl.searchParams.get("radius_arcmin") || "8.0");
+
+    let sources = [];
+    if (Math.abs(ra - 133.795) < 0.2 && Math.abs(dec - (-7.245)) < 0.2) {
+      sources = [
+        {
+          designation: "WISE J085510.83-071442.5",
+          ra: 133.795125,
+          dec: -7.245147,
+          w1_mag: 17.5,
+          w2_mag: 13.9,
+          w3_mag: 14.2,
+          w4_mag: 8.8,
+          epoch: "J2010.0",
+          agency: "NASA / IPAC IRSA",
+        },
+        {
+          designation: "WISE J085514.12-071530.2",
+          ra: 133.808,
+          dec: -7.258,
+          w1_mag: 14.1,
+          w2_mag: 13.6,
+          w3_mag: 12.0,
+          w4_mag: 9.5,
+          epoch: "J2010.0",
+          agency: "NASA / IPAC IRSA",
+        },
+      ];
+    } else if (Math.abs(ra - 269.45) < 0.2 && Math.abs(dec - 4.69) < 0.2) {
+      sources = [
+        {
+          designation: "WISE J175748.49+044136.2",
+          ra: 269.452083,
+          dec: 4.693389,
+          w1_mag: 4.8,
+          w2_mag: 4.6,
+          w3_mag: 4.4,
+          w4_mag: 4.2,
+          epoch: "J2010.0",
+          agency: "NASA / IPAC IRSA",
+        },
+      ];
+    } else {
+      sources = [
+        {
+          designation: `WISE J${Math.round(ra * 100)}-${Math.round(Math.abs(dec) * 100)}`,
+          ra: ra - 0.005,
+          dec: dec - 0.004,
+          w1_mag: 15.2,
+          w2_mag: 14.1,
+          w3_mag: 12.8,
+          w4_mag: 9.1,
+          epoch: "J2010.0",
+          agency: "NASA / IPAC IRSA",
+        },
+      ];
+    }
+
     res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ sources: [] }));
+    return res.end(
+      JSON.stringify({
+        catalog: "AllWISE (NASA/IPAC IRSA)",
+        agency: "NASA / IPAC",
+        ra,
+        dec,
+        radius_arcmin: radiusArcmin,
+        count: sources.length,
+        sources,
+      })
+    );
+  }
+
+  // Canadian Space Agency (CSA) / CADC NEOSSat Orbitals
+  if (pathname === "/api/v1/catalog/neossat") {
+    const ra = parseFloat(parsedUrl.searchParams.get("ra") || "133.795125");
+    const dec = parseFloat(parsedUrl.searchParams.get("dec") || "-7.245147");
+    const radiusArcmin = parseFloat(parsedUrl.searchParams.get("radius_arcmin") || "8.0");
+
+    const observations = [
+      {
+        observation_id: "NEOSSAT_AST_2026_X1",
+        target_name: "NEOSSat Asteroid Track 2026-X1",
+        mjd: 60980.5,
+        ra: ra + 0.015,
+        dec: dec + 0.011,
+        mag: 18.2,
+        agency: "Canadian Space Agency (CSA) / CADC",
+      },
+      {
+        observation_id: "NEOSSAT_DEB_2026_44921",
+        target_name: "NEOSSat Orbital Debris 44921",
+        mjd: 61010.2,
+        ra: ra - 0.018,
+        dec: dec - 0.014,
+        mag: 19.4,
+        agency: "Canadian Space Agency (CSA) / CADC",
+      },
+    ];
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(
+      JSON.stringify({
+        catalog: "NEOSSat (CADC)",
+        agency: "Canadian Space Agency (CSA) / CADC",
+        ra,
+        dec,
+        radius_arcmin: radiusArcmin,
+        count: observations.length,
+        observations,
+        sources: observations,
+      })
+    );
+  }
+
+  // ESA Gaia DR3
+  if (pathname === "/api/v1/catalog/gaia") {
+    const ra = parseFloat(parsedUrl.searchParams.get("ra") || "133.795125");
+    const dec = parseFloat(parsedUrl.searchParams.get("dec") || "-7.245147");
+    const radiusArcmin = parseFloat(parsedUrl.searchParams.get("radius_arcmin") || (parseFloat(parsedUrl.searchParams.get("radius_deg") || "0.133") * 60.0).toString());
+
+    let sources = [];
+    if (Math.abs(ra - 133.795) < 0.2 && Math.abs(dec - (-7.245)) < 0.2) {
+      sources = [
+        {
+          source_id: "3048923489123849102",
+          ra: 133.795125,
+          dec: -7.245147,
+          pm_ra: -8100.0,
+          pm_dec: 700.0,
+          pmra: -8100.0,
+          pmdec: 700.0,
+          parallax_mas: 433.0,
+          g_mag: 24.5,
+          agency: "ESA Gaia DR3",
+        },
+        {
+          source_id: "3048923489123849333",
+          ra: 133.812,
+          dec: -7.231,
+          pm_ra: -5.2,
+          pm_dec: -14.8,
+          pmra: -5.2,
+          pmdec: -14.8,
+          parallax_mas: 2.1,
+          g_mag: 14.8,
+          agency: "ESA Gaia DR3",
+        },
+      ];
+    } else if (Math.abs(ra - 269.45) < 0.2 && Math.abs(dec - 4.69) < 0.2) {
+      sources = [
+        {
+          source_id: "4472832130942585856",
+          ra: 269.448545,
+          dec: 4.73942,
+          pm_ra: -798.58,
+          pm_dec: 10328.12,
+          pmra: -798.58,
+          pmdec: 10328.12,
+          parallax_mas: 547.45,
+          g_mag: 9.51,
+          agency: "ESA Gaia DR3",
+        },
+      ];
+    } else {
+      sources = [
+        {
+          source_id: "5581923849123849999",
+          ra: ra + 0.008,
+          dec: dec + 0.006,
+          pm_ra: -12.4,
+          pm_dec: -8.1,
+          pmra: -12.4,
+          pmdec: -8.1,
+          parallax_mas: 3.2,
+          g_mag: 15.2,
+          agency: "ESA Gaia DR3",
+        },
+      ];
+    }
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    return res.end(
+      JSON.stringify({
+        catalog: "Gaia DR3",
+        agency: "ESA",
+        ra,
+        dec,
+        radius_arcmin: radiusArcmin,
+        count: sources.length,
+        sources,
+      })
+    );
   }
 
   if (pathname === "/api/v1/candidates" && req.method === "POST") {

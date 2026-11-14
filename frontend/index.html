@@ -54,6 +54,10 @@
         <span class="chip-label">PASSBAND:</span>
         <span id="chip-passband" class="chip-value">0.75 - 5.00 &mu;m</span>
       </div>
+      <div class="telemetry-chip agency-chip">
+        <span class="chip-label">AGENCY DATA:</span>
+        <span id="chip-agencies" class="chip-value">NASA &bull; CSA &bull; ESA</span>
+      </div>
     </div>
 
     <!-- Right Utility Icon Cluster -->
@@ -233,6 +237,31 @@
         </div>
       </div>
 
+      <!-- Space Agency Data Streams Status Card -->
+      <div class="space-agency-card">
+        <div class="agency-card-header">
+          <span class="agency-header-title">SPACE AGENCY DATA STREAMS</span>
+          <span class="live-status-tag">LIVE FEED</span>
+        </div>
+        <div class="agency-badges-list">
+          <div class="agency-badge-row">
+            <span class="agency-dot nasa-dot"></span>
+            <span class="agency-name">NASA / IPAC IRSA</span>
+            <span id="badge-nasa-status" class="agency-status-pill">SPHEREx + AllWISE</span>
+          </div>
+          <div class="agency-badge-row">
+            <span class="agency-dot csa-dot"></span>
+            <span class="agency-name">CSA / CADC (Canada)</span>
+            <span id="badge-csa-status" class="agency-status-pill">NEOSSat Orbitals</span>
+          </div>
+          <div class="agency-badge-row">
+            <span class="agency-dot esa-dot"></span>
+            <span class="agency-name">ESA / Gaia</span>
+            <span id="badge-esa-status" class="agency-status-pill">Gaia DR3 Astrometry</span>
+          </div>
+        </div>
+      </div>
+
       <!-- 6. Segmented Orange Filter Bar -->
       <div class="orange-filter-bar">
         <button type="button" class="filter-tab active" id="tab-overlays">OVERLAYS</button>
@@ -350,6 +379,7 @@
             <div class="corner-bar-fill" style="width: 78%;"></div>
           </div>
           <div class="corner-lock-status">STATUS: <span class="gold-text">LOCKED</span></div>
+          <div class="corner-agency-tag">AGENCY: NASA + CSA + ESA</div>
         </div>
 
         <!-- Top-Right Corner Telemetry Overlay -->
@@ -358,6 +388,7 @@
           <div class="corner-meta-pill">MJD: <strong id="detail-mjd">60985.00</strong></div>
           <div class="corner-meta-pill">FOV: <strong id="detail-fov">8.0'</strong></div>
           <div class="corner-meta-pill">&lambda;: <strong id="detail-wavelength">4.12 &mu;m</strong></div>
+          <div class="corner-meta-pill">AGENCY: <strong id="detail-agency">NASA/CSA/ESA</strong></div>
         </div>
 
         <!-- Top-Center Floating Trapezoid/Chamfered HUD Toolbar -->

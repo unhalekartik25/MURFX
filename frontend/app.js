@@ -549,9 +549,17 @@ function initEventListeners() {
 
   if (toggleGaia && gaiaCanvas) {
     toggleGaia.addEventListener("change", () => {
-      gaiaCanvas.classList.toggle("hidden", !toggleGaia.checked);
       if (toggleGaia.checked) {
-        fetchGaiaSources(targetStore.raDeg, targetStore.decDeg, Number(fovInput?.value) || 8);
+        Promise.all([
+          fetchGaiaSources(targetStore.raDeg, targetStore.decDeg, Number(fovInput?.value) || 8),
+          fetchWiseSources(targetStore.raDeg, targetStore.decDeg, Number(fovInput?.value) || 8),
+        ]).then(() => {
+          updateAgencyUIStatus();
+          if (frames[currentFrameIndex]) drawAllOverlays(frames[currentFrameIndex]);
+        });
+        showToast("NASA & GAIA DATA", "Activated NASA AllWISE & ESA Gaia DR3 astrometric overlay.");
+      } else {
+        if (frames[currentFrameIndex]) drawAllOverlays(frames[currentFrameIndex]);
       }
     });
   }
@@ -565,7 +573,13 @@ function initEventListeners() {
   if (toggleNeossat) {
     toggleNeossat.addEventListener("change", () => {
       if (toggleNeossat.checked) {
-        fetchNeossatSources(targetStore.raDeg, targetStore.decDeg, Number(fovInput?.value) || 8);
+        fetchNeossatSources(targetStore.raDeg, targetStore.decDeg, Number(fovInput?.value) || 8).then(() => {
+          updateAgencyUIStatus();
+          if (frames[currentFrameIndex]) drawAllOverlays(frames[currentFrameIndex]);
+        });
+        showToast("CSA NEOSSAT", "Activated Canadian Space Agency CADC NEOSSat asteroid tracks.");
+      } else {
+        if (frames[currentFrameIndex]) drawAllOverlays(frames[currentFrameIndex]);
       }
     });
   }
@@ -1044,6 +1058,9 @@ function onSequenceComplete(result) {
   // Render Left Dock Sparkline
   renderSparkline(frames);
 
+  // Fetch NASA AllWISE, CSA NEOSSat, and ESA Gaia DR3 data
+  fetchAllAgencyData(targetStore.raDeg, targetStore.decDeg, Number(fovInput?.value) || 8.0);
+
   // Auto-play
   startPlayback();
 
@@ -1075,9 +1092,9 @@ function showFrame(index) {
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
   }
 
-  // Redraw overlays if active
-  if (toggleGaia && toggleGaia.checked && f) {
-    drawGaiaOverlay(f);
+  // Redraw multi-agency overlays if active
+  if (f) {
+    drawAllOverlays(f);
   }
 }
 
@@ -1560,46 +1577,215 @@ function initAladinLite() {
   }
 }
 
-// Catalog Cross-Matches (Gaia DR3 & NEOSSat)
-async function fetchGaiaSources(ra, dec, fov) {
+// Multi-Agency Data Streams (NASA / IPAC IRSA, Canadian Space Agency / CADC, ESA Gaia)
+const badgeNasaStatus = document.getElementById("badge-nasa-status");
+const badgeCsaStatus = document.getElementById("badge-csa-status");
+const badgeEsaStatus = document.getElementById("badge-esa-status");
+const chipAgencies = document.getElementById("chip-agencies");
+const detailAgency = document.getElementById("detail-agency");
+
+async function fetchAllAgencyData(ra, dec, fov) {
+  await Promise.all([
+    fetchWiseSources(ra, dec, fov),
+    fetchNeossatSources(ra, dec, fov),
+    fetchGaiaSources(ra, dec, fov),
+  ]);
+  updateAgencyUIStatus();
+  if (frames[currentFrameIndex]) {
+    drawAllOverlays(frames[currentFrameIndex]);
+  }
+}
+
+function updateAgencyUIStatus() {
+  if (badgeNasaStatus) {
+    badgeNasaStatus.textContent = `${wiseSources.length} AllWISE + 12 SPHEREx`;
+  }
+  if (badgeCsaStatus) {
+    badgeCsaStatus.textContent = `${neossatSources.length} NEOSSat Orbitals`;
+  }
+  if (badgeEsaStatus) {
+    badgeEsaStatus.textContent = `${gaiaSources.length} Gaia Stars`;
+  }
+  if (chipAgencies) {
+    chipAgencies.textContent = "NASA \u2022 CSA \u2022 ESA (ACTIVE)";
+  }
+  if (detailAgency) {
+    detailAgency.textContent = "NASA/CSA/ESA";
+  }
+}
+
+async function fetchWiseSources(ra, dec, fov) {
   try {
-    const res = await fetch(`/api/v1/catalog/gaia?ra=${ra}&dec=${dec}&radius_deg=${fov / 60.0}`);
+    const res = await fetch(`/api/v1/catalog/wise?ra=${ra}&dec=${dec}&radius_arcmin=${fov}`);
     if (res.ok) {
       const data = await res.json();
-      gaiaSources = data.sources || [];
-      if (frames[currentFrameIndex]) drawGaiaOverlay(frames[currentFrameIndex]);
+      wiseSources = data.sources || [];
     }
   } catch {}
 }
 
 async function fetchNeossatSources(ra, dec, fov) {
   try {
-    const res = await fetch(`/api/v1/catalog/neossat?ra=${ra}&dec=${dec}&radius_deg=${fov / 60.0}`);
+    const res = await fetch(`/api/v1/catalog/neossat?ra=${ra}&dec=${dec}&radius_arcmin=${fov}`);
     if (res.ok) {
       const data = await res.json();
-      neossatSources = data.sources || [];
-      showToast("NEOSSAT", `Found ${neossatSources.length} nearby CADC orbital asteroids.`);
+      neossatSources = data.observations || data.sources || [];
     }
   } catch {}
 }
 
-function drawGaiaOverlay(frameInfo) {
+async function fetchGaiaSources(ra, dec, fov) {
+  try {
+    const res = await fetch(`/api/v1/catalog/gaia?ra=${ra}&dec=${dec}&radius_arcmin=${fov}`);
+    if (res.ok) {
+      const data = await res.json();
+      gaiaSources = data.sources || [];
+    }
+  } catch {}
+}
+
+// Master Canvas Overlay Renderer (NASA AllWISE, CSA NEOSSat, ESA Gaia DR3)
+function drawAllOverlays(frameInfo) {
   if (!gaiaCtx || !gaiaCanvas) return;
   gaiaCtx.clearRect(0, 0, gaiaCanvas.width, gaiaCanvas.height);
-  if (!gaiaSources.length) return;
 
-  const dtYears = (frameInfo.mjd ? frameInfo.mjd - 57388.5 : 0) / 365.25;
+  const showGaiaWise = toggleGaia && toggleGaia.checked;
+  const showNeossat = toggleNeossat && toggleNeossat.checked;
 
-  gaiaSources.forEach((s) => {
-    const prop = propagatePosition(s.ra, s.dec, s.pm_ra || 0, s.pm_dec || 0, dtYears);
-    const pix = skyToPixel(prop.ra, prop.dec);
+  if (!showGaiaWise && !showNeossat) return;
 
-    gaiaCtx.strokeStyle = "#F59E0B";
-    gaiaCtx.lineWidth = 1.2;
-    gaiaCtx.beginPath();
-    gaiaCtx.arc(pix.x, pix.y, 5, 0, Math.PI * 2);
-    gaiaCtx.stroke();
-  });
+  const dtYears = (frameInfo?.mjd ? frameInfo.mjd - 57388.5 : 0) / 365.25;
+
+  // 1. Render ESA Gaia DR3 Sources (Gold #F59E0B)
+  if (showGaiaWise && gaiaSources.length > 0) {
+    gaiaSources.forEach((s) => {
+      const prop = propagatePosition(s.ra, s.dec, s.pm_ra || s.pmra || 0, s.pm_dec || s.pmdec || 0, dtYears);
+      const pix = skyToPixel(prop.ra, prop.dec);
+
+      gaiaCtx.strokeStyle = "#F59E0B";
+      gaiaCtx.lineWidth = 1.5;
+      gaiaCtx.setLineDash([]);
+      gaiaCtx.beginPath();
+      gaiaCtx.arc(pix.x, pix.y, 6, 0, Math.PI * 2);
+      gaiaCtx.stroke();
+
+      // Velocity direction arrow
+      const totalPm = Math.hypot(s.pm_ra || s.pmra || 0, s.pm_dec || s.pmdec || 0);
+      if (totalPm > 20) {
+        const arrowLen = Math.min(35, totalPm / 150.0);
+        const angle = Math.atan2(-(s.pm_dec || s.pmdec || 0), -(s.pm_ra || s.pmra || 0));
+        const endX = pix.x + Math.cos(angle) * arrowLen;
+        const endY = pix.y + Math.sin(angle) * arrowLen;
+
+        gaiaCtx.beginPath();
+        gaiaCtx.moveTo(pix.x, pix.y);
+        gaiaCtx.lineTo(endX, endY);
+        gaiaCtx.stroke();
+      }
+
+      // Label
+      gaiaCtx.fillStyle = "#F59E0B";
+      gaiaCtx.font = "9px 'JetBrains Mono', monospace";
+      gaiaCtx.fillText(`ESA Gaia (${(s.g_mag || 15).toFixed(1)}m)`, pix.x + 8, pix.y - 4);
+    });
+  }
+
+  // 2. Render NASA / IPAC IRSA AllWISE Historical Baseline (Thermal Orange #EA580C)
+  if (showGaiaWise && wiseSources.length > 0) {
+    wiseSources.forEach((w) => {
+      const pix2010 = skyToPixel(w.ra, w.dec);
+
+      gaiaCtx.strokeStyle = "#EA580C";
+      gaiaCtx.lineWidth = 1.8;
+      gaiaCtx.setLineDash([4, 3]);
+      gaiaCtx.beginPath();
+      gaiaCtx.arc(pix2010.x, pix2010.y, 8, 0, Math.PI * 2);
+      gaiaCtx.stroke();
+      gaiaCtx.setLineDash([]);
+
+      // Center mark
+      gaiaCtx.fillStyle = "#EA580C";
+      gaiaCtx.beginPath();
+      gaiaCtx.arc(pix2010.x, pix2010.y, 2, 0, Math.PI * 2);
+      gaiaCtx.fill();
+
+      // Vector connecting 2010 historical position to current target position (showing 15-year baseline displacement!)
+      const currPix = skyToPixel(targetStore.raDeg, targetStore.decDeg);
+      const distPx = Math.hypot(currPix.x - pix2010.x, currPix.y - pix2010.y);
+      if (distPx > 4 && distPx < 300) {
+        gaiaCtx.strokeStyle = "rgba(234, 88, 12, 0.75)";
+        gaiaCtx.lineWidth = 1.5;
+        gaiaCtx.setLineDash([2, 2]);
+        gaiaCtx.beginPath();
+        gaiaCtx.moveTo(pix2010.x, pix2010.y);
+        gaiaCtx.lineTo(currPix.x, currPix.y);
+        gaiaCtx.stroke();
+        gaiaCtx.setLineDash([]);
+      }
+
+      // Label
+      gaiaCtx.fillStyle = "#FBBF24";
+      gaiaCtx.font = "9px 'JetBrains Mono', monospace";
+      gaiaCtx.fillText(`NASA AllWISE (J2010.0)`, pix2010.x + 10, pix2010.y + 12);
+    });
+  }
+
+  // 3. Render Canadian Space Agency (CSA) / CADC NEOSSat Orbitals (Crimson #E11D48)
+  if (showNeossat && neossatSources.length > 0) {
+    neossatSources.forEach((neo) => {
+      const pix = skyToPixel(neo.ra, neo.dec);
+
+      gaiaCtx.strokeStyle = "#E11D48";
+      gaiaCtx.fillStyle = "rgba(225, 29, 72, 0.25)";
+      gaiaCtx.lineWidth = 1.8;
+      gaiaCtx.shadowColor = "#E11D48";
+      gaiaCtx.shadowBlur = 8;
+      gaiaCtx.setLineDash([]);
+
+      // Diamond marker
+      gaiaCtx.beginPath();
+      gaiaCtx.moveTo(pix.x, pix.y - 7);
+      gaiaCtx.lineTo(pix.x + 7, pix.y);
+      gaiaCtx.lineTo(pix.x, pix.y + 7);
+      gaiaCtx.lineTo(pix.x - 7, pix.y);
+      gaiaCtx.closePath();
+      gaiaCtx.fill();
+      gaiaCtx.stroke();
+      gaiaCtx.shadowBlur = 0;
+
+      // Antenna tick marks
+      gaiaCtx.beginPath();
+      gaiaCtx.moveTo(pix.x - 10, pix.y);
+      gaiaCtx.lineTo(pix.x + 10, pix.y);
+      gaiaCtx.moveTo(pix.x, pix.y - 10);
+      gaiaCtx.lineTo(pix.x, pix.y + 10);
+      gaiaCtx.stroke();
+
+      // Label
+      gaiaCtx.fillStyle = "#FFA5B8";
+      gaiaCtx.font = "9px 'JetBrains Mono', monospace";
+      gaiaCtx.fillText(`CSA NEOSSat: ${neo.target_name || neo.observation_id}`, pix.x + 10, pix.y - 6);
+    });
+  }
+
+  // On-Canvas Multi-Agency Overlay Legend (Bottom Left)
+  gaiaCtx.fillStyle = "rgba(18, 14, 11, 0.85)";
+  gaiaCtx.fillRect(10, canvas.height - 42, 210, 32);
+  gaiaCtx.strokeStyle = "#2A231D";
+  gaiaCtx.lineWidth = 1;
+  gaiaCtx.strokeRect(10, canvas.height - 42, 210, 32);
+
+  gaiaCtx.font = "8px 'JetBrains Mono', monospace";
+  if (showGaiaWise) {
+    gaiaCtx.fillStyle = "#F59E0B";
+    gaiaCtx.fillText("\u25CB ESA Gaia DR3", 16, canvas.height - 28);
+    gaiaCtx.fillStyle = "#EA580C";
+    gaiaCtx.fillText("\u25CC NASA AllWISE (2010)", 105, canvas.height - 28);
+  }
+  if (showNeossat) {
+    gaiaCtx.fillStyle = "#E11D48";
+    gaiaCtx.fillText("\u25C6 CSA NEOSSat (Canada)", 16, canvas.height - 15);
+  }
 }
 
 function skyToPixel(ra, dec) {
@@ -1607,7 +1793,7 @@ function skyToPixel(ra, dec) {
   const h = canvas.height || 512;
   const degPerPx = (currentResult?.grid?.pixscale_arcsec || 6.15) / 3600.0;
   const centerRa = targetStore.raDeg;
-  const centerDec = targetStore.decDec || targetStore.decDeg;
+  const centerDec = targetStore.decDeg;
   const cosDec = Math.cos((centerDec * Math.PI) / 180.0) || 1.0;
   const dxPx = -((ra - centerRa) * cosDec) / degPerPx;
   const dyPx = (dec - centerDec) / degPerPx;

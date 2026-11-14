@@ -654,6 +654,94 @@ html, body {
   border-radius: var(--radius-pill);
 }
 
+/* Space Agency Data Streams Card */
+.space-agency-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.agency-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.agency-header-title {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+}
+
+.live-status-tag {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  font-weight: 800;
+  color: var(--gold-bright);
+  background: var(--gold-muted);
+  border: 1px solid var(--border-gold);
+  padding: 1px 5px;
+  border-radius: var(--radius-pill);
+}
+
+.agency-badges-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.agency-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #171310;
+  border: 1px solid var(--border-dim);
+  border-radius: var(--radius-xs);
+  padding: 3px 6px;
+}
+
+.agency-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.agency-dot.nasa-dot { background: var(--gold-primary); box-shadow: 0 0 6px var(--gold-primary); }
+.agency-dot.csa-dot { background: var(--crimson-ir); box-shadow: 0 0 6px var(--crimson-ir); }
+.agency-dot.esa-dot { background: var(--orange-thermal); box-shadow: 0 0 6px var(--orange-thermal); }
+
+.agency-name {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-left: 5px;
+  flex: 1;
+}
+
+.agency-status-pill {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  color: var(--gold-bright);
+}
+
+.corner-agency-tag {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 800;
+  color: var(--gold-bright);
+  letter-spacing: 0.05em;
+  margin-top: 3px;
+  border-top: 1px solid var(--border-dim);
+  padding-top: 2px;
+}
+
 /* 6. Segmented Orange Filter Bar */
 .orange-filter-bar {
   display: flex;
