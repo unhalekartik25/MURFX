@@ -5,7 +5,8 @@
   "main": "scripts/dev_server.js",
   "scripts": {
     "dev": "node scripts/dev_server.js",
-    "start": "node scripts/dev_server.js"
+    "start": "node scripts/dev_server.js",
+    "test": "node scripts/verify_all.js"
   },
   "keywords": [
     "nasa-space-apps",

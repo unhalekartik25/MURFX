@@ -195,12 +195,15 @@ function getCandidates(seqKey) {
 function saveCandidate(finding) {
   const filePath = path.join(CACHE_DIR, "candidates.json");
   const list = getCandidates();
+  if (!finding.id) {
+    finding.id = "cand_" + Math.random().toString(36).substring(2, 10);
+  }
   if (!finding.created_at) {
     finding.created_at = new Date().toISOString();
   }
   list.push(finding);
   fs.writeFileSync(filePath, JSON.stringify(list, null, 2), "utf-8");
-  return finding;
+  return { status: "created", candidate: finding };
 }
 
 // HTTP Server

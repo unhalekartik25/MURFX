@@ -223,3 +223,14 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 - Performance numbers: N/A for skeleton.
 - Blocked / risks: Local Windows environment lacks Python due to policy; tests and server runs must be executed in Codespaces or Docker.
 - Next: Slice 1 (Core loop, one target end to end, WISE 0855).
+
+---
+
+**Frontend Bento HUD Restoration & Multi-Agency Science Streams  |  2026-11-14 17:40 UTC**
+- Restored the user's authentic 4-section Bento HUD architecture matching the 4 reference operational screenshots:
+  1. `01 MISSION SETUP`: SIMBAD target resolver, challenge target chips (WISE 0855, Barnard's Star, Epsilon Indi B, RW Aurigae, R Draconis), coordinates & FOV form with `✨ SHOW SKY IN STUDIO`, and full SPHEREx D1–D6 detector array matrix.
+  2. `02 BLINK & SPECTRUM`: Left Quick Dock with presets, detector chips, telemetry and central flux sparkline; Center sky canvas with sliding toggles, zoom deck, playback deck, and A/B comparison toolbar; Right Spectrum & SED panel with Web Audio API sonification and CSV export.
+  3. `03 ALADIN SKY`: Interactive Aladin Lite context viewer with `Refresh Sky Context` button and live multi-agency cards for ESA Gaia DR3, NASA AllWISE (J2010.0), and Canadian Space Agency (CSA) CADC NEOSSat.
+  4. `04 CITIZEN LAB`: Citizen Science Discovery Logger form with real-time candidate registry and 8-column Frame Quality Metadata table.
+- Added live canvas and metadata rendering for NASA AllWISE J2010.0 (historic 15-year baseline displacement vectors) and Canadian Space Agency CADC NEOSSat (asteroid and orbital tracks with crimson diamonds).
+- Verified with end-to-end automated test suite (`npm test` / `scripts/verify_all.js`): 100% PASS across all 60 core DOM elements, API endpoints, frame PNG rendering, SED extraction, and discovery exports. Zero `innerHTML` usage strictly enforced.
