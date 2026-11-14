@@ -39,6 +39,21 @@ class DiskCache:
     def _ensure_dirs(self) -> None:
         self.cutouts_dir.mkdir(parents=True, exist_ok=True)
         self.sequences_dir.mkdir(parents=True, exist_ok=True)
+        self._seed_from_demo_data()
+
+    def _seed_from_demo_data(self) -> None:
+        """Seed cache from demo_data/ if present (docs/DEPLOYMENT.md section 5)."""
+        demo_dir = Path(__file__).resolve().parent.parent.parent / "demo_data"
+        if demo_dir.exists() and demo_dir.is_dir():
+            for seq_folder in demo_dir.iterdir():
+                if seq_folder.is_dir():
+                    dest = self.sequences_dir / seq_folder.name
+                    if not dest.exists():
+                        try:
+                            shutil.copytree(seq_folder, dest, dirs_exist_ok=True)
+                            logger.info("Seeded cache sequence from demo_data: %s", seq_folder.name)
+                        except Exception as e:
+                            logger.warning("Could not seed from demo_data/%s: %s", seq_folder.name, e)
 
     @staticmethod
     def _url_to_path(url: str, directory: Path, suffix: str = ".fits") -> Path:

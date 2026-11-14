@@ -101,8 +101,8 @@ Do:
 - Record the demo video; verify the public link from another device; re-read the official submission requirements.
 
 Acceptance:
-- [ ] Everything in DEPLOYMENT.md section 7 release checklist ticked.
-- [ ] Final commit tagged `v1.0-submission`.
+- [x] Everything in DEPLOYMENT.md section 7 release checklist ticked.
+- [x] Final commit tagged `v1.0-submission`.
 
 ---
 

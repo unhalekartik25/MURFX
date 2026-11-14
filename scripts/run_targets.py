@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Pipeline verification script for required targets (WISE 0855, etc.).
+"""Pipeline verification script for all five required challenge targets.
 
-Specification: docs/ROADMAP.md Slice 1, docs/TEST_TARGETS.md.
+Specification: docs/ROADMAP.md Slice 5, docs/TEST_TARGETS.md.
 Usage:
-    python scripts/run_targets.py [--base-url http://localhost:8000]
+    python scripts/run_targets.py [--target all|wise0855|barnard|epsind|rwaur|rdra] [--base-url http://localhost:8000]
 """
 
 from __future__ import annotations
@@ -14,21 +14,68 @@ import time
 from pathlib import Path
 from PIL import Image
 
-# Add project root to sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from backend.app.config import settings
 from backend.app.pipeline import run_sequence
+from backend.app.resolver import resolve_object_name
 from backend.app.schemas import SequenceRequest
+
+TARGETS_DATA = {
+    "wise0855": {
+        "name": "WISE 0855",
+        "ra": 133.795125,
+        "dec": -7.245147,
+        "fov_arcmin": 8.0,
+        "detector": 5,
+        "max_frames": 15,
+        "phenomenon": "Fast-moving cold brown dwarf (~8\"/yr proper motion)",
+    },
+    "barnard": {
+        "name": "Barnard's Star",
+        "resolve_name": "Barnard's Star",
+        "fov_arcmin": 8.0,
+        "detector": 2,
+        "max_frames": 12,
+        "phenomenon": "Rapid northward proper motion (~10.3\"/yr) centered on J2026.0",
+    },
+    "epsind": {
+        "name": "Epsilon Indi B",
+        "resolve_name": "eps Ind B",
+        "fov_arcmin": 12.0,
+        "detector": 3,
+        "max_frames": 10,
+        "phenomenon": "Brown dwarf binary shifting against background stars",
+    },
+    "rwaur": {
+        "name": "RW Aurigae",
+        "resolve_name": "RW Aur",
+        "fov_arcmin": 4.0,
+        "detector": 2,
+        "max_frames": 12,
+        "phenomenon": "Young irregular variable star brightness changes across epochs",
+    },
+    "rdra": {
+        "name": "R Draconis",
+        "resolve_name": "R Dra",
+        "fov_arcmin": 4.0,
+        "detector": 2,
+        "max_frames": 12,
+        "phenomenon": "Mira-type large periodic amplitude variability",
+    },
+}
 
 
 def build_contact_sheet(frame_paths: list[Path], output_path: Path, cols: int = 4) -> None:
-    """Combine rendered frame PNGs into a contact sheet grid for visual alignment inspection."""
+    """Combine rendered frame PNGs into a contact sheet grid for visual inspection."""
     if not frame_paths:
         return
 
-    images = [Image.open(p) for p in frame_paths]
+    images = [Image.open(p) for p in frame_paths if p.exists()]
+    if not images:
+        return
+
     w, h = images[0].size
     n = len(images)
     rows = (n + cols - 1) // cols
@@ -41,26 +88,31 @@ def build_contact_sheet(frame_paths: list[Path], output_path: Path, cols: int = 
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     sheet.save(output_path, "PNG")
-    print(f"Contact sheet saved to: {output_path}")
+    print(f"  Contact sheet saved to: {output_path}")
 
 
-def run_wise0855_direct() -> bool:
-    """Run the pipeline directly in Python for WISE 0855."""
-    print("=== Running WISE 0855 Direct Pipeline ===")
+def run_target_direct(target_key: str) -> bool:
+    """Run pipeline directly for one of the challenge targets."""
+    info = TARGETS_DATA[target_key]
+    print(f"\n=== Running target: {info['name']} ({info['phenomenon']}) ===")
+
+    if "ra" in info and "dec" in info:
+        ra = info["ra"]
+        dec = info["dec"]
+    else:
+        resolved = resolve_object_name(info["resolve_name"])
+        ra = resolved.get("ra_now") or resolved["ra"]
+        dec = resolved.get("dec_now") or resolved["dec"]
+
     req = SequenceRequest(
-        ra=133.795125,
-        dec=-7.245147,
-        fov_arcmin=8.0,
-        detector=5,
+        ra=ra,
+        dec=dec,
+        fov_arcmin=info["fov_arcmin"],
+        detector=info["detector"],
         mode="frames",
-        background="median",
-        mask_level="minimal",
-        stretch="global",
-        upsample=2,
-        max_frames=15,
+        max_frames=info["max_frames"],
     )
     key = req.compute_key()
-    print(f"Computed sequence key: {key}")
 
     start_time = time.monotonic()
 
@@ -72,53 +124,104 @@ def run_wise0855_direct() -> bool:
         result = run_sequence(req, key, progress_cb=progress)
         print()
         elapsed = time.monotonic() - start_time
-        print(f"\nPipeline finished in {elapsed:.1f}s")
+        print(f"  Completed in:     {elapsed:.1f}s")
         print(f"  Available frames: {result.n_available}")
         print(f"  Rendered frames:  {result.n_frames}")
-        print(f"  Failed downloads: {result.n_failed_downloads}")
-        print(f"  Grid dimensions:  {result.grid.width}x{result.grid.height} (pxscale: {result.grid.pixscale_arcsec}\")")
-        print(f"  Stretch range:    [{result.stretch.vmin}, {result.stretch.vmax}] {result.stretch.unit}")
+        print(f"  Grid dimensions:  {result.grid.width}x{result.grid.height}")
 
-        # Assemble contact sheet
         frame_files = [
             settings.cache_dir / "sequences" / key / f"{f.index}.png"
             for f in result.frames
-            if (settings.cache_dir / "sequences" / key / f"{f.index}.png").exists()
         ]
-        contact_path = settings.cache_dir / "contact_wise0855.png"
+        contact_path = settings.cache_dir / f"contact_{target_key}.png"
         build_contact_sheet(frame_files, contact_path)
 
-        if result.n_frames >= 2:
-            print("SUCCESS: WISE 0855 pipeline completed successfully.")
-            return True
-        else:
-            print("FAILURE: Less than 2 frames produced.")
-            return False
-
+        return result.n_frames >= 2
     except Exception as e:
-        print(f"\nPipeline error: {e}")
+        print(f"\n  Pipeline error for {info['name']}: {e}")
         return False
 
 
+def run_target_http(target_key: str, base_url: str) -> bool:
+    """Run target verification via deployed HTTP API."""
+    import httpx
+    info = TARGETS_DATA[target_key]
+    base_url = base_url.rstrip("/")
+    print(f"\n=== HTTP verification: {info['name']} via {base_url} ===")
+
+    with httpx.Client(timeout=180.0) as client:
+        try:
+            if "ra" in info and "dec" in info:
+                ra, dec = info["ra"], info["dec"]
+            else:
+                res_resp = client.get(f"{base_url}/api/v1/resolve", params={"name": info["resolve_name"]})
+                if res_resp.status_code != 200:
+                    print(f"  Resolve failed: HTTP {res_resp.status_code}")
+                    return False
+                res_data = res_resp.json()
+                ra = res_data.get("ra_now") or res_data["ra"]
+                dec = res_data.get("dec_now") or res_data["dec"]
+
+            post_resp = client.post(
+                f"{base_url}/api/v1/sequences",
+                json={
+                    "ra": ra,
+                    "dec": dec,
+                    "fov_arcmin": info["fov_arcmin"],
+                    "detector": info["detector"],
+                    "max_frames": info["max_frames"],
+                },
+            )
+            print(f"  POST /sequences: HTTP {post_resp.status_code}")
+            data = post_resp.json()
+            key = data.get("key")
+            if not key:
+                return False
+
+            # Poll until done
+            for _ in range(60):
+                time.sleep(2.0)
+                status_resp = client.get(f"{base_url}/api/v1/sequences/{key}")
+                status_data = status_resp.json()
+                st = status_data.get("status")
+                if st == "done":
+                    n_frames = status_data.get("result", {}).get("n_frames", 0)
+                    print(f"  Job {key} completed: {n_frames} frames.")
+                    return n_frames >= 2
+                elif st == "failed":
+                    print(f"  Job {key} failed: {status_data.get('error')}")
+                    return False
+
+            print("  Polling timed out.")
+            return False
+        except Exception as e:
+            print(f"  HTTP error for {info['name']}: {e}")
+            return False
+
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run pipeline targets verification")
-    parser.add_argument("--base-url", default=None, help="Optional HTTP base URL to test via API")
+    parser = argparse.ArgumentParser(description="Run MURFX challenge target verification")
+    parser.add_argument(
+        "--target",
+        default="all",
+        choices=["all", "wise0855", "barnard", "epsind", "rwaur", "rdra"],
+        help="Target to run (default: all)",
+    )
+    parser.add_argument("--base-url", default=None, help="Base URL of deployed service")
     args = parser.parse_args()
 
-    if args.base_url:
-        print(f"Testing target via API: {args.base_url}")
-        # Could query HTTP POST /api/v1/sequences
-        import httpx
-        with httpx.Client(timeout=120.0) as client:
-            resp = client.post(
-                f"{args.base_url}/api/v1/sequences",
-                json={"ra": 133.795125, "dec": -7.245147, "fov_arcmin": 8.0, "detector": 5, "max_frames": 15},
-            )
-            print(f"Response: {resp.status_code}")
-            print(resp.json())
-    else:
-        success = run_wise0855_direct()
-        sys.exit(0 if success else 1)
+    targets_to_run = list(TARGETS_DATA.keys()) if args.target == "all" else [args.target]
+    all_ok = True
+
+    for t in targets_to_run:
+        if args.base_url:
+            ok = run_target_http(t, args.base_url)
+        else:
+            ok = run_target_direct(t)
+        if not ok:
+            all_ok = False
+
+    sys.exit(0 if all_ok else 1)
 
 
 if __name__ == "__main__":

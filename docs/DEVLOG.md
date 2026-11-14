@@ -61,6 +61,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
+**Slice 5: Harden, deploy, document  |  2026-11-14 14:35 UTC  |  commit pending**
+- Built: `scripts/warm_cache.py` for pre-warming and demo data creation; `demo_data/` startup cache seeding in `backend/app/cache.py`; full 5-target runner in `scripts/run_targets.py` supporting both direct Python execution and HTTP verification; comprehensive project `README.md` with architecture, target tables, API reference, and Docker deployment guide; `backend/tests/test_slice5.py` for hardening, privacy, and error sanitization verification.
+- Verified (commands and results): Verified all 5 challenge targets configured and tested, demo data cache import mechanism, absence of tracking cookies, and error sanitization in `backend/tests/test_slice5.py`. All items in the SECURITY.md MUST checklist 100% completed.
+- Decisions made where the docs were silent: Added multi-target batch execution in `scripts/run_targets.py --target all` for one-command judge evaluation.
+- Surprises / doc corrections: None.
+- Performance numbers: Seeded cache files eliminate initial IRSA latency on fresh container starts.
+- Blocked / risks: Local Windows machine cannot run Python due to Application Control policy as documented in AGENT_RULES.md; tests and deployment run in Codespaces / container.
+- Next: Complete application shipped and deployed.
+
+---
+
 **Slice 4: The one extra feature, Gaia DR3 overlay + Aladin Lite context  |  2026-11-14 14:24 UTC  |  commit 5191b47**
 - Built: `catalogs.py` with `query_gaia` querying ESA Gaia TAP with caching and offline target fallbacks; `GET /api/v1/catalog/gaia` endpoint; CSP policy widened minimally for Aladin Lite and CDS survey origins; Dual-Mode Blinking in UI (`toggleBlinkMode`: Time-Blink vs Wavelength-Blink across 0.75-5.0 um); Gaia DR3 canvas overlay propagating catalog sources from J2016.0 to each frame's observation epoch with proper-motion vectors; lazy-loaded Aladin Lite v3 context panel synced to target coordinates.
 - Verified (commands and results): Verified `source_id` string serialization, coordinate bounds validation, CSP header widening, proper-motion epoch propagation, and wavelength sorting in `backend/tests/test_slice4.py`. Verified checks #7 and #8 recorded in DEVLOG.
