@@ -13,6 +13,7 @@ from fastapi import APIRouter, Path as FPath, Query, Request, Response, status
 from fastapi.responses import FileResponse, JSONResponse
 
 from backend.app.cache import disk_cache
+from backend.app.catalogs import query_gaia
 from backend.app.config import DETECTOR_METADATA, settings
 from backend.app.errors import AppError
 from backend.app.jobs import job_registry
@@ -120,6 +121,21 @@ async def resolve(
 
     response.headers["Cache-Control"] = "public, max-age=86400"
     return resolve_object_name(name)
+
+
+@router.get("/catalog/gaia", tags=["catalogs"])
+async def catalog_gaia(
+    response: Response,
+    ra: float = Query(..., ge=0.0, lt=360.0, description="Center Right Ascension in degrees"),
+    dec: float = Query(..., ge=-90.0, le=90.0, description="Center Declination in degrees"),
+    radius_arcmin: float = Query(default=8.0, ge=0.5, le=20.0, description="Search radius in arcminutes"),
+) -> dict[str, Any]:
+    """Query Gaia DR3 sources with proper motion per docs/API_SPEC.md section 3.7.
+
+    Returns up to 500 sources. Cache-Control: public, max-age=86400.
+    """
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return query_gaia(ra, dec, radius_arcmin)
 
 
 @router.post("/sequences", tags=["sequences"])

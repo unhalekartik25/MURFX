@@ -17,6 +17,9 @@ let isLooping = true;
 let isBouncing = false;
 let bounceDirection = 1; // 1 = forward, -1 = reverse
 let lastResolvedData = null;
+let blinkMode = "time"; // "time" or "wavelength"
+let gaiaSources = [];
+let aladinInstance = null;
 
 // DOM Elements
 const appHeader = document.getElementById("app-header");
@@ -78,8 +81,15 @@ const hoverCoords = document.getElementById("hover-coords");
 const toggleCrosshair = document.getElementById("toggle-crosshair");
 const toggleCompass = document.getElementById("toggle-compass");
 const toggleScale = document.getElementById("toggle-scale");
+const toggleGaia = document.getElementById("toggle-gaia");
 const toggleFlags = document.getElementById("toggle-flags");
 const toggleSmooth = document.getElementById("toggle-smooth");
+const toggleAladinBtn = document.getElementById("toggle-aladin-btn");
+const aladinSection = document.getElementById("aladin-section");
+const blinkModeBtn = document.getElementById("blink-mode-btn");
+
+const gaiaCanvas = document.getElementById("gaia-canvas");
+const gaiaCtx = gaiaCanvas ? gaiaCanvas.getContext("2d") : null;
 
 const metaMjd = document.getElementById("meta-mjd");
 const metaDate = document.getElementById("meta-date");
@@ -171,6 +181,20 @@ function initEventListeners() {
         loadAndDrawFlags(currentFrameIndex);
       }
     });
+  }
+  if (toggleGaia && gaiaCanvas) {
+    toggleGaia.addEventListener("change", () => {
+      gaiaCanvas.classList.toggle("hidden", !toggleGaia.checked);
+      if (toggleGaia.checked && frames[currentFrameIndex]) {
+        drawGaiaOverlay(frames[currentFrameIndex]);
+      }
+    });
+  }
+  if (blinkModeBtn) {
+    blinkModeBtn.addEventListener("click", toggleBlinkMode);
+  }
+  if (toggleAladinBtn && aladinSection) {
+    toggleAladinBtn.addEventListener("click", toggleAladinView);
   }
   toggleSmooth.addEventListener("change", () => {
     canvas.style.imageRendering = toggleSmooth.checked ? "auto" : "pixelated";
@@ -485,7 +509,12 @@ async function loadSequenceResult(result) {
       flagsCanvas.width = result.grid.width;
       flagsCanvas.height = result.grid.height;
     }
+    if (gaiaCanvas) {
+      gaiaCanvas.width = result.grid.width;
+      gaiaCanvas.height = result.grid.height;
+    }
     updateScaleBar(result.grid.pixscale_arcsec);
+    fetchGaiaSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
   }
 
   // Render Table Rows
@@ -614,6 +643,142 @@ function showFrame(index) {
   if (toggleFlags && toggleFlags.checked) {
     loadAndDrawFlags(index);
   }
+
+  // Draw Gaia DR3 overlay if enabled
+  if (toggleGaia && toggleGaia.checked && frames[index]) {
+    drawGaiaOverlay(frames[index]);
+  }
+}
+
+async function fetchGaiaSources(ra, dec, radiusArcmin) {
+  try {
+    const res = await fetch(`/api/v1/catalog/gaia?ra=${ra}&dec=${dec}&radius_arcmin=${radiusArcmin}`);
+    if (res.ok) {
+      const data = await res.json();
+      gaiaSources = data.sources || [];
+      if (frames[currentFrameIndex]) {
+        drawGaiaOverlay(frames[currentFrameIndex]);
+      }
+    }
+  } catch {
+    gaiaSources = [];
+  }
+}
+
+function worldToCanvasPx(ra, dec) {
+  if (!currentResult || !currentResult.grid) return null;
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2.0;
+  const cy = h / 2.0;
+
+  const degPerPx = (currentResult.grid.pixscale_arcsec || 3.08) / 3600.0;
+  const centerRa = parseFloat(raInput.value);
+  const centerDec = parseFloat(decInput.value);
+
+  const cosDec = Math.cos((centerDec * Math.PI) / 180.0) || 1.0;
+  const dxDeg = (centerRa - ra) * cosDec;
+  const dyDeg = dec - centerDec;
+
+  const x = cx + dxDeg / degPerPx;
+  const y = cy - dyDeg / degPerPx;
+  return { x, y };
+}
+
+function drawGaiaOverlay(frame) {
+  if (!gaiaCtx || !gaiaCanvas || !gaiaSources.length || !currentResult || !currentResult.grid) {
+    if (gaiaCtx && gaiaCanvas) gaiaCtx.clearRect(0, 0, gaiaCanvas.width, gaiaCanvas.height);
+    return;
+  }
+  gaiaCtx.clearRect(0, 0, gaiaCanvas.width, gaiaCanvas.height);
+
+  // Propagate Gaia sources from catalog epoch J2016.0 to frame epoch
+  const frameEpoch = 2000.0 + (frame.mjd - 51544.5) / 365.25;
+  const dt = frameEpoch - 2016.0;
+
+  gaiaSources.forEach((src) => {
+    const pmraDegYr = (src.pmra_mas_yr || 0.0) / (3600.0 * 1000.0);
+    const pmdecDegYr = (src.pmdec_mas_yr || 0.0) / (3600.0 * 1000.0);
+    const cosDec = Math.cos((src.dec * Math.PI) / 180.0) || 1.0;
+
+    const raEpoch = src.ra + (pmraDegYr * dt) / cosDec;
+    const decEpoch = src.dec + pmdecDegYr * dt;
+
+    const pt = worldToCanvasPx(raEpoch, decEpoch);
+    if (pt && pt.x >= -30 && pt.x <= gaiaCanvas.width + 30 && pt.y >= -30 && pt.y <= gaiaCanvas.height + 30) {
+      gaiaCtx.beginPath();
+      gaiaCtx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+      gaiaCtx.strokeStyle = "#4ade80"; // Bright Green
+      gaiaCtx.lineWidth = 1.5;
+      gaiaCtx.stroke();
+
+      // Draw proper motion vector arrow if significant
+      const pmTot = Math.hypot(src.pmra_mas_yr || 0, src.pmdec_mas_yr || 0);
+      if (pmTot > 50.0) {
+        const arrowDx = -((src.pmra_mas_yr || 0) / 100.0);
+        const arrowDy = -((src.pmdec_mas_yr || 0) / 100.0);
+        gaiaCtx.beginPath();
+        gaiaCtx.moveTo(pt.x, pt.y);
+        gaiaCtx.lineTo(pt.x + arrowDx, pt.y + arrowDy);
+        gaiaCtx.strokeStyle = "#facc15";
+        gaiaCtx.lineWidth = 1.2;
+        gaiaCtx.stroke();
+      }
+    }
+  });
+}
+
+function toggleBlinkMode() {
+  if (!frames || frames.length <= 1) return;
+  blinkMode = blinkMode === "time" ? "wavelength" : "time";
+  if (blinkModeBtn) {
+    blinkModeBtn.textContent = blinkMode === "wavelength" ? "Blink: Wavelength" : "Blink: Time";
+  }
+
+  // Reorder frames & loadedImages
+  const combined = frames.map((f, i) => ({ frame: f, img: loadedImages[i] }));
+  if (blinkMode === "wavelength") {
+    combined.sort((a, b) => (a.frame.wavelength_um || 0) - (b.frame.wavelength_um || 0));
+  } else {
+    combined.sort((a, b) => a.frame.mjd - b.frame.mjd);
+  }
+
+  frames = combined.map((c) => c.frame);
+  loadedImages = combined.map((c) => c.img);
+
+  renderTableRows(frames);
+  currentFrameIndex = 0;
+  showFrame(0);
+}
+
+function toggleAladinView() {
+  if (!aladinSection) return;
+  aladinSection.classList.toggle("hidden");
+  if (!aladinSection.classList.contains("hidden")) {
+    initAladinLite();
+  }
+}
+
+function initAladinLite() {
+  const aladinDiv = document.getElementById("aladin-lite-div");
+  if (!aladinDiv) return;
+
+  const ra = parseFloat(raInput.value);
+  const dec = parseFloat(decInput.value);
+  const fovDeg = parseFloat(fovInput.value) / 60.0;
+
+  // Use embedded CDS iframe context if script is blocked or in offline mode
+  while (aladinDiv.firstChild) {
+    aladinDiv.removeChild(aladinDiv.firstChild);
+  }
+
+  const iframe = document.createElement("iframe");
+  iframe.src = `https://aladin.cds.unistra.fr/AladinLite/?target=${encodeURIComponent(`${ra} ${dec}`)}&fov=${fovDeg.toFixed(3)}&survey=P%2F2MASS%2Fcolor`;
+  iframe.style.width = "100%";
+  iframe.style.height = "100%";
+  iframe.style.border = "none";
+  iframe.title = "Aladin Lite Survey Context";
+  aladinDiv.appendChild(iframe);
 }
 
 async function loadAndDrawFlags(index) {

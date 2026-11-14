@@ -85,9 +85,9 @@ Build:
 - Aladin Lite panel (lazy-loaded, pinned, SRI), CSP widened minimally.
 
 Acceptance:
-- [ ] For Barnard's Star the overlay marker follows the star's motion between frames (visual check, screenshot in DEVLOG).
-- [ ] CSP has no blocked resources in the browser console; only the pinned Aladin origin(s) added.
-- [ ] If Gaia/Aladin fails, the rest of the app still works and shows a friendly message.
+- [x] For Barnard's Star the overlay marker follows the star's motion between frames (visual check, screenshot in DEVLOG).
+- [x] CSP has no blocked resources in the browser console; only the pinned Aladin origin(s) added.
+- [x] If Gaia/Aladin fails, the rest of the app still works and shows a friendly message.
 
 If Slice 4 is at risk, switch to the backup: image add/subtract (difference of two selected frames/stacks), which needs no new external service.
 

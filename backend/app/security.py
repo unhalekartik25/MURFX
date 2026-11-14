@@ -13,14 +13,14 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from backend.app.config import settings
 
-# Slice 0-3 Strict Content-Security-Policy
+# Slice 4 Content-Security-Policy with minimal widening for Aladin Lite & CDS survey tiles
 # frame-ancestors * is intentional and required for embedding (docs/SECURITY.md section 6)
 CSP_POLICY = (
     "default-src 'self'; "
-    "script-src 'self'; "
-    "style-src 'self' 'unsafe-inline'; "
-    "img-src 'self' data: blob:; "
-    "connect-src 'self'; "
+    "script-src 'self' https://aladin.cds.unistra.fr https://cdn.jsdelivr.net; "
+    "style-src 'self' 'unsafe-inline' https://aladin.cds.unistra.fr; "
+    "img-src 'self' data: blob: https://aladin.cds.unistra.fr https://*.cds.unistra.fr https://*.unistra.fr; "
+    "connect-src 'self' https://aladin.cds.unistra.fr https://*.cds.unistra.fr https://*.unistra.fr https://gea.esac.esa.int; "
     "frame-ancestors *; "
     "base-uri 'none'; "
     "form-action 'none'; "

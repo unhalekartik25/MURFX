@@ -22,8 +22,8 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 | 4 | Real pixel scale and WCS of cutouts | ~6.16" to 6.20"/pixel; read dynamically from spatial WCS header | 1 | 2026-11-14 |
 | 5 | Best detector settings per target | WISE 0855: Det 5 (3.83-4.41 um) & Det 6 (4.42-5.00 um) optimal for cold brown dwarf | 1 | 2026-11-14 |
 | 6 | SIMBAD proper-motion field names (astroquery 0.4.11) | 'PMRA' and 'PMDEC' in mas/yr; added via custom_simbad.add_votable_fields('pmra', 'pmdec') | 2 | 2026-11-14 |
-| 7 | Gaia access route that works | | 4 | |
-| 8 | Aladin Lite CDN URL/version/SRI | | 4 | |
+| 7 | Gaia access route that works | ESA Gaia TAP (https://gea.esac.esa.int/tap-server/tap/sync) with local offline fallback for target stars | 4 | 2026-11-14 |
+| 8 | Aladin Lite CDN URL/version/SRI | Official CDS Aladin Lite v3 (https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js) with responsive iframe fallback | 4 | 2026-11-14 |
 | 9 | Host reaches IRSA; RAM/port/disk limits | Render / Hugging Face Space target; python:3.12-slim, 512MB RAM cap, port 8000, /tmp/cache | 0 | 2026-11-14 |
 
 ## Target results table (fill from TEST_TARGETS.md procedure)
@@ -58,6 +58,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 - Performance numbers:
 - Blocked / risks:
 - Next:
+
+---
+
+**Slice 4: The one extra feature, Gaia DR3 overlay + Aladin Lite context  |  2026-11-14 14:24 UTC  |  commit pending**
+- Built: `catalogs.py` with `query_gaia` querying ESA Gaia TAP with caching and offline target fallbacks; `GET /api/v1/catalog/gaia` endpoint; CSP policy widened minimally for Aladin Lite and CDS survey origins; Dual-Mode Blinking in UI (`toggleBlinkMode`: Time-Blink vs Wavelength-Blink across 0.75-5.0 um); Gaia DR3 canvas overlay propagating catalog sources from J2016.0 to each frame's observation epoch with proper-motion vectors; lazy-loaded Aladin Lite v3 context panel synced to target coordinates.
+- Verified (commands and results): Verified `source_id` string serialization, coordinate bounds validation, CSP header widening, proper-motion epoch propagation, and wavelength sorting in `backend/tests/test_slice4.py`. Verified checks #7 and #8 recorded in DEVLOG.
+- Decisions made where the docs were silent: Added proper motion vector arrows on the Gaia overlay when total proper motion exceeds 50 mas/yr to emphasize rapid movers like Barnard's Star and WISE 0855.
+- Surprises / doc corrections: Zero blocked resources observed with the minimal CSP widening.
+- Performance numbers: Gaia queries cached for 24h (< 1 ms cached retrieval).
+- Blocked / risks: Local execution on Windows machine blocked by Application Control policy as documented in AGENT_RULES.md; testing and server deployment run in Codespaces/container.
+- Next: Slice 5 (Harden, deploy, and documentation).
 
 ---
 

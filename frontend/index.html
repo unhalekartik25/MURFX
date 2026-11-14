@@ -148,8 +148,10 @@
         <label><input type="checkbox" id="toggle-crosshair" checked> Crosshair</label>
         <label><input type="checkbox" id="toggle-compass" checked> Compass</label>
         <label><input type="checkbox" id="toggle-scale" checked> Scale Bar</label>
-        <label><input type="checkbox" id="toggle-flags"> Flags Mask</label>
+        <label><input type="checkbox" id="toggle-gaia" checked> Gaia DR3</label>
+        <label><input type="checkbox" id="toggle-flags"> Flags</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
+        <button type="button" id="toggle-aladin-btn" class="btn btn-chip">Aladin Context</button>
         <span id="hover-coords" class="hover-coords">RA: --, Dec: --</span>
       </div>
 
@@ -157,6 +159,7 @@
       <div class="canvas-wrapper" id="canvas-container" tabindex="0" title="Click or use keyboard shortcuts (Space, Left/Right, [, ], L)">
         <canvas id="blink-canvas" width="400" height="400"></canvas>
         <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
+        <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="400" height="400"></canvas>
         
         <!-- Center Crosshair Layer -->
         <div id="crosshair-layer" class="crosshair-overlay"></div>
@@ -193,6 +196,7 @@
         </div>
 
         <div class="playback-options">
+          <button type="button" id="blink-mode-btn" class="btn btn-chip" title="Toggle Time vs Wavelength Blink Mode">Blink: Time</button>
           <button type="button" id="loop-btn" class="btn btn-chip active" title="Toggle Loop (L)">Loop</button>
           <button type="button" id="bounce-btn" class="btn btn-chip" title="Toggle Bounce / Ping-Pong">Bounce</button>
         </div>
@@ -220,6 +224,15 @@
         <span id="detail-flagged">Flagged: --</span> &bull;
         <span id="detail-version">Version: --</span>
       </div>
+    </section>
+
+    <!-- Aladin Lite Context Panel -->
+    <section id="aladin-section" class="aladin-card hidden">
+      <div class="aladin-header">
+        <h3>Aladin Lite Sky Context</h3>
+        <span class="aladin-subtext">2MASS / DSS Sky Survey Context &bull; CDS Strasbourg</span>
+      </div>
+      <div id="aladin-lite-div" class="aladin-viewport"></div>
     </section>
 
     <!-- Sparkline Section for Variable Stars -->
