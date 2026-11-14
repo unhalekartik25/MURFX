@@ -498,6 +498,91 @@ async def get_neossat_catalog(
     )
 
 
+@router.get("/sequences/{key}/stack.fits", tags=["sequences"])
+async def export_sequence_fits(
+    request: Request,
+    key: str = FPath(..., description="32-character hex sequence key"),
+) -> FileResponse:
+    """Export the sequence as a calibrated scientific FITS image with WCS (Slice 9).
+
+    Cache-Control: public, max-age=86400
+    """
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    client_ip = get_client_ip(request)
+    allowed, retry_after = frames_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Export rate limit exceeded.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    # Check cached FITS file
+    cached_fits = disk_cache.get_sequence_fits_path(key)
+    if cached_fits and cached_fits.exists():
+        return FileResponse(
+            path=str(cached_fits),
+            media_type="application/fits",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
+            },
+        )
+
+    meta = disk_cache.get_sequence_meta(key)
+    if not meta:
+        raise AppError("NOT_FOUND", 404, f"Sequence key '{key}' not found.")
+
+    import io
+    import numpy as np
+    from astropy.io import fits
+    from astropy.wcs import WCS
+
+    grid_meta = meta.get("grid", {})
+    wcs_dict = grid_meta.get("wcs", {})
+    w = grid_meta.get("width", 20)
+    h = grid_meta.get("height", 20)
+
+    cube = disk_cache.get_sequence_cube(key)
+    if cube is not None:
+        data = cube["data"]  # shape (N, H, W)
+        stacked = np.nanmean(data, axis=0)
+        fits_data = np.flipud(stacked)  # Row 0 South for FITS
+    else:
+        fits_data = np.zeros((h, w), dtype=np.float32)
+
+    wcs_obj = WCS(naxis=2)
+    wcs_obj.wcs.ctype = wcs_dict.get("ctype", ["RA---TAN", "DEC--TAN"])
+    wcs_obj.wcs.crval = wcs_dict.get("crval", [meta.get("request", {}).get("ra", 0.0), meta.get("request", {}).get("dec", 0.0)])
+    wcs_obj.wcs.crpix = wcs_dict.get("crpix", [w / 2.0, h / 2.0])
+    wcs_obj.wcs.cdelt = wcs_dict.get("cdelt_deg", [-0.000856, 0.000856])
+
+    header = wcs_obj.to_header()
+    header["BUNIT"] = ("MJy/sr", "Surface brightness")
+    header["CREATOR"] = ("MURFX SPHEREx Explorer", "NASA Space Apps 2026")
+    header["TELESCOP"] = ("SPHEREx", "NASA SPHEREx Mission")
+    header["SEQ_KEY"] = (key, "Sequence Hash")
+    header["NFRAMES"] = (len(meta.get("frames", [])), "Number of frames")
+
+    hdu = fits.PrimaryHDU(data=fits_data.astype(np.float32), header=header)
+    bio = io.BytesIO()
+    hdu.writeto(bio)
+    fits_bytes = bio.getvalue()
+    fits_path = disk_cache.put_sequence_fits(key, fits_bytes)
+
+    return FileResponse(
+        path=str(fits_path),
+        media_type="application/fits",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
+        },
+    )
+
+
 @router.get("/sequences/{key}/export.gif", tags=["sequences"])
 async def export_sequence_gif(
     request: Request,
@@ -575,4 +660,89 @@ async def get_wise_catalog(
         status_code=status.HTTP_200_OK,
         content=data,
         headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get("/sequences/{key}/stack.fits", tags=["sequences"])
+async def export_sequence_fits(
+    request: Request,
+    key: str = FPath(..., description="32-character hex sequence key"),
+) -> FileResponse:
+    """Export the sequence as a calibrated scientific FITS image with WCS (Slice 9).
+
+    Cache-Control: public, max-age=86400
+    """
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    client_ip = get_client_ip(request)
+    allowed, retry_after = frames_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Export rate limit exceeded.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    # Check cached FITS file
+    cached_fits = disk_cache.get_sequence_fits_path(key)
+    if cached_fits and cached_fits.exists():
+        return FileResponse(
+            path=str(cached_fits),
+            media_type="application/fits",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
+            },
+        )
+
+    meta = disk_cache.get_sequence_meta(key)
+    if not meta:
+        raise AppError("NOT_FOUND", 404, f"Sequence key '{key}' not found.")
+
+    import io
+    import numpy as np
+    from astropy.io import fits
+    from astropy.wcs import WCS
+
+    grid_meta = meta.get("grid", {})
+    wcs_dict = grid_meta.get("wcs", {})
+    w = grid_meta.get("width", 20)
+    h = grid_meta.get("height", 20)
+
+    cube = disk_cache.get_sequence_cube(key)
+    if cube is not None:
+        data = cube["data"]  # shape (N, H, W)
+        stacked = np.nanmean(data, axis=0)
+        fits_data = np.flipud(stacked)  # Row 0 South for FITS
+    else:
+        fits_data = np.zeros((h, w), dtype=np.float32)
+
+    wcs_obj = WCS(naxis=2)
+    wcs_obj.wcs.ctype = wcs_dict.get("ctype", ["RA---TAN", "DEC--TAN"])
+    wcs_obj.wcs.crval = wcs_dict.get("crval", [meta.get("request", {}).get("ra", 0.0), meta.get("request", {}).get("dec", 0.0)])
+    wcs_obj.wcs.crpix = wcs_dict.get("crpix", [w / 2.0, h / 2.0])
+    wcs_obj.wcs.cdelt = wcs_dict.get("cdelt_deg", [-0.000856, 0.000856])
+
+    header = wcs_obj.to_header()
+    header["BUNIT"] = ("MJy/sr", "Surface brightness")
+    header["CREATOR"] = ("MURFX SPHEREx Explorer", "NASA Space Apps 2026")
+    header["TELESCOP"] = ("SPHEREx", "NASA SPHEREx Mission")
+    header["SEQ_KEY"] = (key, "Sequence Hash")
+    header["NFRAMES"] = (len(meta.get("frames", [])), "Number of frames")
+
+    hdu = fits.PrimaryHDU(data=fits_data.astype(np.float32), header=header)
+    bio = io.BytesIO()
+    hdu.writeto(bio)
+    fits_bytes = bio.getvalue()
+    fits_path = disk_cache.put_sequence_fits(key, fits_bytes)
+
+    return FileResponse(
+        path=str(fits_path),
+        media_type="application/fits",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
+        },
     )

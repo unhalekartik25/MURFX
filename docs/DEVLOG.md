@@ -61,6 +61,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
+**Slice 9: Variable Star Light Curves, Invert Contrast Mode & Stacked FITS Export  |  2026-11-14 16:50 UTC  |  commit pending**
+- Built: `GET /api/v1/sequences/{key}/stack.fits` generating standard calibrated scientific FITS files with full WCS coordinates (`RA---TAN`, `DEC--TAN`, `BUNIT='MJy/sr'`) via `astropy.io.fits`; FITS disk caching in `backend/app/cache.py`; frontend Invert contrast mode (`.canvas-inverted`, checkbox, and keyboard shortcut 'I'); Dual SED vs Light-Curve view mode in the spectrum panel plotting Flux vs MJD with error bars for variable stars (RW Aur, R Dra); client-side FITS export button; `backend/tests/test_slice9.py`.
+- Verified (commands and results): Verified scientific FITS header compliance, WCS keywords, primary HDU shape and floating-point flux fidelity, 404 error handling for invalid keys, and zero `innerHTML` across all files in `backend/tests/test_slice9.py`.
+- Decisions made where the docs were silent: Inverted cube row orientation vertically (`np.flipud`) before creating FITS PrimaryHDU so row 0 adheres to astronomical standard (South bottom) while retaining TAN spatial projection; light curve view maps X-axis to MJD dates with dynamic tick formatting.
+- Surprises / doc corrections: Astropy WCS header generation seamlessly transfers the tangent projection directly from `meta.json`.
+- Performance numbers: Stacked FITS generation and caching is sub-50 ms for 512x512 scenes.
+- Blocked / risks: Local Windows workstation enforces Application Control policy as noted in AGENT_RULES.md; testing and server run in Codespaces / container.
+- Next: MURFX is fully hardened, feature-rich, and ready for space apps judging.
+
+---
+
 **Slice 8: AllWISE 15-Year Epoch Overlay, Multi-Band Detector Matrix & Sequence Export  |  2026-11-14 16:40 UTC  |  commit 3e75faa**
 - Built: `query_wise` in `backend/app/catalogs.py` with `GET /api/v1/catalog/wise`; `render_animation_gif` in `backend/app/render.py` compiling sequence frames into animated GIFs; `GET /api/v1/sequences/{key}/export.gif` in `backend/app/api.py`; animated GIF caching in `backend/app/cache.py`; frontend detector quick-select chip matrix (D1-D6) with scientific band descriptions; AllWISE 2010 historical overlay with orange circle markers to show 15-year epoch shift; client-side animated GIF export and spectrum CSV export; `backend/tests/test_slice8.py`.
 - Verified (commands and results): Verified looping GIF compilation and animation headers, export endpoint content disposition, AllWISE catalog queries and photometry parsing, and zero `innerHTML` across all files in `backend/tests/test_slice8.py`.

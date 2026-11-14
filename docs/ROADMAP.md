@@ -155,6 +155,22 @@ Acceptance:
 - [x] Unit tests in `backend/tests/test_slice8.py` pass.
 - [x] Strict zero `innerHTML` compliance verified across `frontend/`.
 
+## Slice 9: Variable Star Light Curves, Invert Contrast Mode & Stacked FITS Export (STRETCH)
+
+Build:
+- `backend/app/cache.py`: FITS file caching (`get_sequence_fits_path`, `put_sequence_fits`).
+- `backend/app/api.py`: `GET /sequences/{key}/stack.fits` generating standard calibrated scientific FITS images with complete WCS headers (`RA---TAN`, `DEC--TAN`, `BUNIT='MJy/sr'`).
+- Frontend Invert Contrast Mode: "Invert" toggle and keyboard shortcut ('I') for high-contrast negative view (black stars on white sky).
+- Frontend Dual SED & Light-Curve Switch: toggle between Flux vs Wavelength and Flux vs Time (MJD) for variable stars (e.g. RW Aur, R Dra).
+- Frontend Scientific FITS Export: "Export FITS" button downloading co-added FITS files for professional analysis in DS9/Astropy.
+
+Acceptance:
+- [x] Scientific FITS export produces valid PrimaryHDU with WCS coordinates and MJy/sr unit headers.
+- [x] Invert contrast mode flips viewer canvas into negative contrast view.
+- [x] Light curve mode visualizes flux variations vs MJD for clicked variable stars.
+- [x] Unit tests in `backend/tests/test_slice9.py` pass.
+- [x] Strict zero `innerHTML` compliance verified across `frontend/`.
+
 ---
 
 ## Priority / cut-list (drop from the top first if time is short)

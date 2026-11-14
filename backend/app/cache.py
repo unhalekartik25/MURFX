@@ -198,6 +198,19 @@ class DiskCache:
         self._atomic_write_bytes(gif_path, data)
         return gif_path
 
+    def get_sequence_fits_path(self, key: str) -> Path | None:
+        """Get path to a cached stacked scientific FITS file if it exists (Slice 9)."""
+        fits_path = self.sequences_dir / key / "stack.fits"
+        return fits_path if fits_path.exists() else None
+
+    def put_sequence_fits(self, key: str, data: bytes) -> Path:
+        """Atomically write a scientific FITS file (Slice 9)."""
+        seq_dir = self.sequences_dir / key
+        seq_dir.mkdir(parents=True, exist_ok=True)
+        fits_path = seq_dir / "stack.fits"
+        self._atomic_write_bytes(fits_path, data)
+        return fits_path
+
     def _atomic_write_bytes(self, destination: Path, data: bytes) -> None:
         """Write to a temporary file in the same directory, then atomically replace destination."""
         dest_dir = destination.parent

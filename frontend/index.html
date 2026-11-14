@@ -161,6 +161,7 @@
         <label><input type="checkbox" id="toggle-neossat"> NEOSSat</label>
         <label><input type="checkbox" id="toggle-flags"> Flags</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
+        <label><input type="checkbox" id="toggle-invert"> Invert</label>
         <button type="button" id="toggle-aladin-btn" class="btn btn-chip">Aladin Context</button>
         <span id="hover-coords" class="hover-coords">RA: --, Dec: --</span>
       </div>
@@ -221,6 +222,7 @@
           <button type="button" id="blink-ab-btn" class="btn btn-chip" title="Blink exclusively between Frame A and Frame B">Blink A/B</button>
           <button type="button" id="diff-ab-btn" class="btn btn-chip" title="Toggle Image Subtraction (B - A)">Diff (B - A)</button>
           <button type="button" id="export-gif-btn" class="btn btn-chip" title="Export sequence as animated GIF">&#128190; Export GIF</button>
+          <button type="button" id="export-fits-btn" class="btn btn-chip" title="Export calibrated stacked FITS image with WCS">&#128190; FITS</button>
           <span id="ab-status" class="ab-status">A: Frame 1 &bull; B: Frame 2</span>
         </div>
 
@@ -284,6 +286,7 @@
               <option value="3">3 px (5x5)</option>
             </select>
           </label>
+          <button type="button" id="spectrum-mode-btn" class="btn btn-chip" title="Toggle between Spectrum (SED) and Variable Star Light Curve">View: SED</button>
           <button type="button" id="export-spectrum-csv-btn" class="btn btn-secondary" title="Export extracted spectrum points as CSV">Export CSV</button>
           <button type="button" id="play-audio-btn" class="btn btn-primary" title="Play Web Audio Sonification of Infrared Spectrum">&#9658; Play Audio</button>
           <button type="button" id="stop-audio-btn" class="btn btn-secondary hidden" title="Stop Audio">&#9632; Stop</button>

@@ -134,6 +134,12 @@ const exportGifBtn = document.getElementById("export-gif-btn");
 const exportSpectrumCsvBtn = document.getElementById("export-spectrum-csv-btn");
 const detChips = document.querySelectorAll(".det-chip");
 
+// Invert, FITS Export & Light Curve Elements (Slice 9)
+const toggleInvert = document.getElementById("toggle-invert");
+const exportFitsBtn = document.getElementById("export-fits-btn");
+const spectrumModeBtn = document.getElementById("spectrum-mode-btn");
+let spectrumPlotMode = "sed"; // "sed" or "lightcurve"
+
 const metaMjd = document.getElementById("meta-mjd");
 const metaDate = document.getElementById("meta-date");
 const metaWavelength = document.getElementById("meta-wavelength");
@@ -313,6 +319,15 @@ function initEventListeners() {
 
   if (exportGifBtn) exportGifBtn.addEventListener("click", exportGif);
   if (exportSpectrumCsvBtn) exportSpectrumCsvBtn.addEventListener("click", exportSpectrumCsv);
+
+  // Invert Mode & FITS Export & Light Curve (Slice 9)
+  if (toggleInvert) {
+    toggleInvert.addEventListener("change", () => {
+      canvas.classList.toggle("canvas-inverted", toggleInvert.checked);
+    });
+  }
+  if (exportFitsBtn) exportFitsBtn.addEventListener("click", exportFits);
+  if (spectrumModeBtn) spectrumModeBtn.addEventListener("click", toggleSpectrumMode);
 
   // Share & Embed Buttons
   shareLinkBtn.addEventListener("click", copyShareLink);
@@ -1161,6 +1176,13 @@ function handleKeyboardShortcuts(e) {
     case "L":
       loopBtn.click();
       break;
+    case "i":
+    case "I":
+      if (toggleInvert) {
+        toggleInvert.checked = !toggleInvert.checked;
+        canvas.classList.toggle("canvas-inverted", toggleInvert.checked);
+      }
+      break;
     case "f":
     case "F":
       if (!document.fullscreenElement) {
@@ -1284,13 +1306,21 @@ function drawSpectrumPlot(spectrumData, activeIndex) {
   const h = spectrumCanvas.height;
   spectrumCtx.clearRect(0, 0, w, h);
 
-  const points = spectrumData.points || [];
+  const isLightCurve = spectrumPlotMode === "lightcurve";
+  const points = [...(spectrumData.points || [])];
   if (points.length === 0) {
     spectrumCtx.fillStyle = "#64748b";
     spectrumCtx.font = "14px sans-serif";
     spectrumCtx.textAlign = "center";
     spectrumCtx.fillText("No valid spectral points in extracted aperture.", w / 2, h / 2);
     return;
+  }
+
+  // Sort according to plot mode
+  if (isLightCurve) {
+    points.sort((a, b) => a.mjd - b.mjd);
+  } else {
+    points.sort((a, b) => a.wavelength_um - b.wavelength_um);
   }
 
   const padLeft = 60;
@@ -1300,9 +1330,9 @@ function drawSpectrumPlot(spectrumData, activeIndex) {
   const plotW = w - padLeft - padRight;
   const plotH = h - padTop - padBottom;
 
-  const wlMin = Math.min(0.75, Math.min(...points.map((p) => p.wavelength_um)));
-  const wlMax = Math.max(5.0, Math.max(...points.map((p) => p.wavelength_um)));
-  const wlRange = wlMax > wlMin ? wlMax - wlMin : 1.0;
+  const xMin = isLightCurve ? Math.min(...points.map((p) => p.mjd)) : Math.min(0.75, Math.min(...points.map((p) => p.wavelength_um)));
+  const xMax = isLightCurve ? Math.max(...points.map((p) => p.mjd)) : Math.max(5.0, Math.max(...points.map((p) => p.wavelength_um)));
+  const xRange = xMax > xMin ? xMax - xMin : 1.0;
 
   const fluxVals = points.map((p) => p.flux_mjy_sr);
   const minFlux = Math.min(...fluxVals);
@@ -1321,20 +1351,62 @@ function drawSpectrumPlot(spectrumData, activeIndex) {
   spectrumCtx.lineTo(w - padRight, h - padBottom);
   spectrumCtx.stroke();
 
-  // Wavelength ticks: 1.0, 2.0, 3.0, 4.0, 5.0 um
+  // X ticks
   spectrumCtx.fillStyle = "#64748b";
   spectrumCtx.font = "11px monospace";
   spectrumCtx.textAlign = "center";
-  for (let wl = 1.0; wl <= 5.0; wl += 1.0) {
-    const x = padLeft + ((wl - wlMin) / wlRange) * plotW;
-    if (x >= padLeft && x <= w - padRight) {
+
+  if (isLightCurve) {
+    const numXTicks = 4;
+    for (let i = 0; i <= numXTicks; i++) {
+      const frac = i / numXTicks;
+      const mjdVal = xMin + frac * xRange;
+      const x = padLeft + frac * plotW;
       spectrumCtx.beginPath();
       spectrumCtx.strokeStyle = "#1e293b";
       spectrumCtx.moveTo(x, padTop);
       spectrumCtx.lineTo(x, h - padBottom);
       spectrumCtx.stroke();
-      spectrumCtx.fillText(`${wl.toFixed(1)} \u03bcm`, x, h - padBottom + 16);
+      spectrumCtx.fillText(`${mjdVal.toFixed(1)}`, x, h - padBottom + 16);
     }
+    spectrumCtx.fillStyle = "#38bdf8";
+    spectrumCtx.font = "bold 11px sans-serif";
+    spectrumCtx.textAlign = "center";
+    spectrumCtx.fillText("Variable Star Light Curve (Flux vs MJD)", w / 2, padTop + 10);
+  } else {
+    for (let wl = 1.0; wl <= 5.0; wl += 1.0) {
+      const x = padLeft + ((wl - xMin) / xRange) * plotW;
+      if (x >= padLeft && x <= w - padRight) {
+        spectrumCtx.beginPath();
+        spectrumCtx.strokeStyle = "#1e293b";
+        spectrumCtx.moveTo(x, padTop);
+        spectrumCtx.lineTo(x, h - padBottom);
+        spectrumCtx.stroke();
+        spectrumCtx.fillText(`${wl.toFixed(1)} \u03bcm`, x, h - padBottom + 16);
+      }
+    }
+
+    // Detector band markers (D1-D6)
+    const detectors = [
+      { name: "D1", min: 0.75, max: 1.09, color: "#38bdf8" },
+      { name: "D2", min: 1.10, max: 1.62, color: "#818cf8" },
+      { name: "D3", min: 1.63, max: 2.41, color: "#a855f7" },
+      { name: "D4", min: 2.42, max: 3.82, color: "#ec4899" },
+      { name: "D5", min: 3.83, max: 4.41, color: "#f43f5e" },
+      { name: "D6", min: 4.42, max: 5.00, color: "#ef4444" },
+    ];
+    detectors.forEach((det) => {
+      const x1 = padLeft + ((det.min - xMin) / xRange) * plotW;
+      const x2 = padLeft + ((det.max - xMin) / xRange) * plotW;
+      spectrumCtx.fillStyle = det.color;
+      spectrumCtx.globalAlpha = 0.15;
+      spectrumCtx.fillRect(x1, padTop, x2 - x1, 14);
+      spectrumCtx.globalAlpha = 1.0;
+      spectrumCtx.fillStyle = det.color;
+      spectrumCtx.font = "9px sans-serif";
+      spectrumCtx.textAlign = "center";
+      spectrumCtx.fillText(det.name, (x1 + x2) / 2, padTop + 10);
+    });
   }
 
   // Flux Y ticks
@@ -1362,37 +1434,16 @@ function drawSpectrumPlot(spectrumData, activeIndex) {
   spectrumCtx.fillText("Flux (MJy/sr)", 0, 0);
   spectrumCtx.restore();
 
-  // Detector band markers (D1-D6)
-  const detectors = [
-    { name: "D1", min: 0.75, max: 1.09, color: "#38bdf8" },
-    { name: "D2", min: 1.10, max: 1.62, color: "#818cf8" },
-    { name: "D3", min: 1.63, max: 2.41, color: "#a855f7" },
-    { name: "D4", min: 2.42, max: 3.82, color: "#ec4899" },
-    { name: "D5", min: 3.83, max: 4.41, color: "#f43f5e" },
-    { name: "D6", min: 4.42, max: 5.00, color: "#ef4444" },
-  ];
-  detectors.forEach((det) => {
-    const x1 = padLeft + ((det.min - wlMin) / wlRange) * plotW;
-    const x2 = padLeft + ((det.max - wlMin) / wlRange) * plotW;
-    spectrumCtx.fillStyle = det.color;
-    spectrumCtx.globalAlpha = 0.15;
-    spectrumCtx.fillRect(x1, padTop, x2 - x1, 14);
-    spectrumCtx.globalAlpha = 1.0;
-    spectrumCtx.fillStyle = det.color;
-    spectrumCtx.font = "9px sans-serif";
-    spectrumCtx.textAlign = "center";
-    spectrumCtx.fillText(det.name, (x1 + x2) / 2, padTop + 10);
-  });
-
   // Plot line
   const coords = points.map((p, idx) => {
-    const x = padLeft + ((p.wavelength_um - wlMin) / wlRange) * plotW;
+    const xVal = isLightCurve ? p.mjd : p.wavelength_um;
+    const x = padLeft + ((xVal - xMin) / xRange) * plotW;
     const y = h - padBottom - ((p.flux_mjy_sr - yMin) / yRange) * plotH;
     return { x, y, point: p, idx };
   });
 
   spectrumCtx.beginPath();
-  spectrumCtx.strokeStyle = "#38bdf8";
+  spectrumCtx.strokeStyle = isLightCurve ? "#f59e0b" : "#38bdf8";
   spectrumCtx.lineWidth = 2;
   coords.forEach((c, idx) => {
     if (idx === 0) spectrumCtx.moveTo(c.x, c.y);
@@ -1422,7 +1473,7 @@ function drawSpectrumPlot(spectrumData, activeIndex) {
 
     spectrumCtx.beginPath();
     spectrumCtx.arc(c.x, c.y, isAct ? 6 : 3.5, 0, Math.PI * 2);
-    spectrumCtx.fillStyle = isAct ? "#f59e0b" : "#38bdf8";
+    spectrumCtx.fillStyle = isAct ? "#f59e0b" : (isLightCurve ? "#f59e0b" : "#38bdf8");
     spectrumCtx.fill();
     if (isAct) {
       spectrumCtx.strokeStyle = "#ffffff";
@@ -1432,11 +1483,8 @@ function drawSpectrumPlot(spectrumData, activeIndex) {
       spectrumCtx.fillStyle = "#f59e0b";
       spectrumCtx.font = "bold 11px monospace";
       spectrumCtx.textAlign = "center";
-      spectrumCtx.fillText(
-        `${p.wavelength_um.toFixed(2)}\u03bcm : ${p.flux_mjy_sr.toFixed(2)} MJy/sr`,
-        c.x,
-        Math.max(padTop + 24, c.y - 12)
-      );
+      const lbl = isLightCurve ? `MJD ${p.mjd.toFixed(1)} : ${p.flux_mjy_sr.toFixed(2)} MJy/sr` : `${p.wavelength_um.toFixed(2)}\u03bcm : ${p.flux_mjy_sr.toFixed(2)} MJy/sr`;
+      spectrumCtx.fillText(lbl, c.x, Math.max(padTop + 24, c.y - 12));
     }
   });
 
@@ -1696,4 +1744,29 @@ function exportSpectrumCsv() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// Slice 9: Spectrum Mode Switch (SED vs Light Curve) & FITS Export
+function toggleSpectrumMode() {
+  spectrumPlotMode = spectrumPlotMode === "sed" ? "lightcurve" : "sed";
+  if (spectrumModeBtn) {
+    spectrumModeBtn.textContent = spectrumPlotMode === "sed" ? "View: SED" : "View: Light Curve";
+  }
+  if (currentSpectrumData) {
+    drawSpectrumPlot(currentSpectrumData, -1);
+  }
+}
+
+function exportFits() {
+  if (!currentSequenceKey) {
+    alert("Load a sequence first before exporting FITS.");
+    return;
+  }
+  const url = `/api/v1/sequences/${currentSequenceKey}/stack.fits`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `spherex_${currentSequenceKey.slice(0, 8)}_stack.fits`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }

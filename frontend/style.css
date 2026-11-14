@@ -368,6 +368,10 @@ body.embed-mode .viewer-card {
   image-rendering: pixelated;
 }
 
+.canvas-inverted {
+  filter: invert(1);
+}
+
 /* Crosshair Overlay */
 .crosshair-overlay {
   position: absolute;
