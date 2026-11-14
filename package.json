@@ -1,0 +1,19 @@
+{
+  "name": "murfx",
+  "version": "1.0.0",
+  "description": "MURFX: SPHEREx Wise-Cube & Blink Explorer",
+  "main": "scripts/dev_server.js",
+  "scripts": {
+    "dev": "node scripts/dev_server.js",
+    "start": "node scripts/dev_server.js"
+  },
+  "keywords": [
+    "nasa-space-apps",
+    "spherex",
+    "infrared",
+    "astronomy",
+    "planet-x"
+  ],
+  "author": "MURFX Team",
+  "license": "MIT"
+}
