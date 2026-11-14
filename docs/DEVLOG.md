@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 8: AllWISE 15-Year Epoch Overlay, Multi-Band Detector Matrix & Sequence Export  |  2026-11-14 16:40 UTC  |  commit pending**
+**Slice 8: AllWISE 15-Year Epoch Overlay, Multi-Band Detector Matrix & Sequence Export  |  2026-11-14 16:40 UTC  |  commit 3e75faa**
 - Built: `query_wise` in `backend/app/catalogs.py` with `GET /api/v1/catalog/wise`; `render_animation_gif` in `backend/app/render.py` compiling sequence frames into animated GIFs; `GET /api/v1/sequences/{key}/export.gif` in `backend/app/api.py`; animated GIF caching in `backend/app/cache.py`; frontend detector quick-select chip matrix (D1-D6) with scientific band descriptions; AllWISE 2010 historical overlay with orange circle markers to show 15-year epoch shift; client-side animated GIF export and spectrum CSV export; `backend/tests/test_slice8.py`.
 - Verified (commands and results): Verified looping GIF compilation and animation headers, export endpoint content disposition, AllWISE catalog queries and photometry parsing, and zero `innerHTML` across all files in `backend/tests/test_slice8.py`.
 - Decisions made where the docs were silent: GIF duration calculated dynamically from playback FPS (1000/fps ms per frame, capped between 50ms and 1000ms) with infinite looping (loop=0); AllWISE overlay rendered with orange circles to contrast against green Gaia DR3 markers.
