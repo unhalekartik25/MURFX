@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 9: Variable Star Light Curves, Invert Contrast Mode & Stacked FITS Export  |  2026-11-14 16:50 UTC  |  commit pending**
+**Slice 9: Variable Star Light Curves, Invert Contrast Mode & Stacked FITS Export  |  2026-11-14 16:50 UTC  |  commit 6304153**
 - Built: `GET /api/v1/sequences/{key}/stack.fits` generating standard calibrated scientific FITS files with full WCS coordinates (`RA---TAN`, `DEC--TAN`, `BUNIT='MJy/sr'`) via `astropy.io.fits`; FITS disk caching in `backend/app/cache.py`; frontend Invert contrast mode (`.canvas-inverted`, checkbox, and keyboard shortcut 'I'); Dual SED vs Light-Curve view mode in the spectrum panel plotting Flux vs MJD with error bars for variable stars (RW Aur, R Dra); client-side FITS export button; `backend/tests/test_slice9.py`.
 - Verified (commands and results): Verified scientific FITS header compliance, WCS keywords, primary HDU shape and floating-point flux fidelity, 404 error handling for invalid keys, and zero `innerHTML` across all files in `backend/tests/test_slice9.py`.
 - Decisions made where the docs were silent: Inverted cube row orientation vertically (`np.flipud`) before creating FITS PrimaryHDU so row 0 adheres to astronomical standard (South bottom) while retaining TAN spatial projection; light curve view maps X-axis to MJD dates with dynamic tick formatting.
