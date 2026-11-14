@@ -1757,7 +1757,7 @@ function initAladinLite() {
   }
 
   const iframe = document.createElement("iframe");
-  iframe.src = `https://aladin.cds.unistra.fr/AladinLite/?target=${encodeURIComponent(`${ra} ${dec}`)}&fov=${fovDeg.toFixed(3)}&survey=P%2F2MASS%2Fcolor`;
+  iframe.src = `https://aladin.cds.unistra.fr/AladinLite/?target=${encodeURIComponent(`${ra.toFixed(6)},${dec.toFixed(6)}`)}&fov=${fovDeg.toFixed(3)}&survey=P%2F2MASS%2Fcolor`;
   iframe.style.width = "100%";
   iframe.style.height = "100%";
   iframe.style.border = "none";
