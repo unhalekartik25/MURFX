@@ -13,10 +13,11 @@ from fastapi import APIRouter, Path as FPath, Query, Request, Response, status
 from fastapi.responses import FileResponse, JSONResponse
 
 from backend.app.cache import disk_cache
-from backend.app.catalogs import query_gaia
+from backend.app.catalogs import query_cadc_neossat, query_gaia
 from backend.app.config import DETECTOR_METADATA, settings
 from backend.app.errors import AppError
 from backend.app.jobs import job_registry
+from backend.app.render import render_difference_png
 from backend.app.resolver import resolve_object_name
 from backend.app.schemas import SequenceRequest, SequenceStatus, SpectrumPoint, SpectrumResult
 from backend.app.security import (
@@ -377,4 +378,121 @@ async def get_pixel_spectrum(
         status_code=status.HTTP_200_OK,
         content=res.model_dump(),
         headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@router.get("/sequences/{key}/difference.png", tags=["sequences"])
+async def get_sequence_difference(
+    request: Request,
+    key: str = FPath(..., description="32-character hex sequence key"),
+    frame_a: int = Query(..., ge=0, description="0-based reference frame index A"),
+    frame_b: int = Query(..., ge=0, description="0-based comparison frame index B"),
+) -> FileResponse:
+    """Serve image subtraction (difference) PNG between frame_b and frame_a (Slice 7).
+
+    Cache-Control: public, max-age=86400, immutable
+    """
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    client_ip = get_client_ip(request)
+    allowed, retry_after = frames_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Frame retrieval rate limit exceeded.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    # Check cached difference PNG
+    cached_diff = disk_cache.get_frame_difference_path(key, frame_a, frame_b)
+    if cached_diff and cached_diff.exists():
+        return FileResponse(
+            path=str(cached_diff),
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=86400, immutable",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+
+    meta = disk_cache.get_sequence_meta(key)
+    if not meta:
+        raise AppError("NOT_FOUND", 404, f"Sequence key '{key}' not found.")
+
+    frames_list = meta.get("frames", [])
+    if frame_a >= len(frames_list) or frame_b >= len(frames_list):
+        raise AppError(
+            "INVALID_PARAMETER",
+            422,
+            f"Frame indices ({frame_a}, {frame_b}) exceed sequence frame count ({len(frames_list)}).",
+        )
+
+    import numpy as np
+
+    # Route 1: Compute from spectral cube if available (scientific flux difference)
+    cube = disk_cache.get_sequence_cube(key)
+    if cube is not None:
+        data = cube["data"]  # shape (N, H, W)
+        if frame_a < data.shape[0] and frame_b < data.shape[0]:
+            diff_arr = data[frame_b] - data[frame_a]
+            valid = np.isfinite(data[frame_b]) & np.isfinite(data[frame_a])
+            png_bytes = render_difference_png(diff_arr, valid, already_flipped=True)
+            diff_path = disk_cache.put_frame_difference_png(key, frame_a, frame_b, png_bytes)
+            return FileResponse(
+                path=str(diff_path),
+                media_type="image/png",
+                headers={
+                    "Cache-Control": "public, max-age=86400, immutable",
+                    "X-Content-Type-Options": "nosniff",
+                },
+            )
+
+    # Route 2: Compute difference directly from rendered PNG frames (fallback)
+    path_a = disk_cache.get_frame_png_path(key, frame_a)
+    path_b = disk_cache.get_frame_png_path(key, frame_b)
+    if not path_a or not path_a.exists() or not path_b or not path_b.exists():
+        raise AppError("NOT_FOUND", 404, "One or both target frames are missing.")
+
+    from PIL import Image
+
+    img_a = Image.open(path_a).convert("LA")
+    img_b = Image.open(path_b).convert("LA")
+
+    arr_a = np.array(img_a)
+    arr_b = np.array(img_b)
+
+    gray_a = arr_a[:, :, 0].astype(np.float32)
+    gray_b = arr_b[:, :, 0].astype(np.float32)
+    alpha_a = arr_a[:, :, 1] > 0
+    alpha_b = arr_b[:, :, 1] > 0
+
+    diff_arr = gray_b - gray_a
+    valid = alpha_a & alpha_b
+    png_bytes = render_difference_png(diff_arr, valid, already_flipped=True)
+    diff_path = disk_cache.put_frame_difference_png(key, frame_a, frame_b, png_bytes)
+
+    return FileResponse(
+        path=str(diff_path),
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=86400, immutable",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
+
+
+@router.get("/catalog/neossat", tags=["catalogs"])
+async def get_neossat_catalog(
+    ra: float = Query(..., ge=0.0, lt=360.0, description="Right Ascension in ICRS degrees"),
+    dec: float = Query(..., ge=-90.0, le=90.0, description="Declination in ICRS degrees"),
+    radius_arcmin: float = Query(default=8.0, ge=0.5, le=30.0, description="Search radius in arcmin"),
+) -> JSONResponse:
+    """Query CADC NEOSSat observations for moving asteroid/debris cross-matching (Slice 7)."""
+    data = query_cadc_neossat(ra, dec, radius_arcmin)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=data,
+        headers={"Cache-Control": "public, max-age=86400"},
     )

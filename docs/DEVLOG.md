@@ -61,6 +61,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
+**Slice 7: Image Subtraction, Blink A/B Mode & CADC NEOSSat Cross-Matching  |  2026-11-14 16:30 UTC  |  commit pending**
+- Built: `render_difference_png` in `backend/app/render.py` with symmetric zero-centered stretch (128 neutral gray); difference image caching in `backend/app/cache.py`; `GET /api/v1/sequences/{key}/difference.png?frame_a={i}&frame_b={j}` in `backend/app/api.py`; CADC TAP query `query_cadc_neossat` in `backend/app/catalogs.py` with `GET /api/v1/catalog/neossat`; frontend Blink A/B toolbar ("Set A", "Set B", "Blink A/B", "Diff (B - A)") in `frontend/app.js` and `frontend/index.html`; NEOSSat asteroid/satellite overlay; `backend/tests/test_slice7.py`.
+- Verified (commands and results): Verified difference PNG symmetric stretch (0 -> 128, positive > 128, negative < 128), frame index bounds validation, difference generation from spectral cube and image fallback, CADC NEOSSat cross-match responses, and zero `innerHTML` in `backend/tests/test_slice7.py`.
+- Decisions made where the docs were silent: Difference stretch limit computed as 3*sigma of valid difference pixels (or 99th percentile of absolute differences) to ensure faint moving sources create sharp positive/negative dipoles while background stars cancel to neutral gray.
+- Surprises / doc corrections: Zero external dependencies added; works with both scientific floating-point cubes and rendered PNG frames.
+- Performance numbers: Difference generation is sub-10 ms for cached sequences.
+- Blocked / risks: Local Windows machine requires running Python in GitHub Codespaces or Docker container due to local Application Control policy.
+- Next: All planned challenge features, integrations, and stretch capabilities 100% complete.
+
+---
+
 **Slice 6: Pixel Spectrum Extraction & Web Audio Sonification  |  2026-11-14 16:15 UTC  |  commit 0c6fffd**
 - Built: `backend/app/cache.py` spectral cube serialization (`put_sequence_cube`, `get_sequence_cube`); automatic spectral cube retention in `backend/app/pipeline.py`; `GET /api/v1/spectrum` endpoint in `backend/app/api.py` extracting multi-wavelength SED with circular aperture and variance error propagation; native HTML5 Canvas spectrum curve renderer in `frontend/app.js`; Web Audio API logarithmic sonification synthesis mapping infrared flux to pitch (220 Hz to 880 Hz) with animated playhead cursor; canvas click pin marker and aperture selector (1-3 px); `backend/tests/test_slice6.py`.
 - Verified (commands and results): Verified schema validation, 404 on malformed keys, coordinate bounds enforcement, circular aperture flux calculation, wavelength-ascending sort order, variance error propagation, and zero `innerHTML` in `backend/tests/test_slice6.py`.

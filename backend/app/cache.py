@@ -172,6 +172,19 @@ class DiskCache:
         self._atomic_write_bytes(cube_path, bio.getvalue())
         return cube_path
 
+    def get_frame_difference_path(self, key: str, frame_a: int, frame_b: int) -> Path | None:
+        """Get path to a cached difference PNG if it exists (Slice 7)."""
+        diff_path = self.sequences_dir / key / f"diff_{frame_a}_{frame_b}.png"
+        return diff_path if diff_path.exists() else None
+
+    def put_frame_difference_png(self, key: str, frame_a: int, frame_b: int, data: bytes) -> Path:
+        """Atomically write a difference PNG (Slice 7)."""
+        seq_dir = self.sequences_dir / key
+        seq_dir.mkdir(parents=True, exist_ok=True)
+        diff_path = seq_dir / f"diff_{frame_a}_{frame_b}.png"
+        self._atomic_write_bytes(diff_path, data)
+        return diff_path
+
     def _atomic_write_bytes(self, destination: Path, data: bytes) -> None:
         """Write to a temporary file in the same directory, then atomically replace destination."""
         dest_dir = destination.parent

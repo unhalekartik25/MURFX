@@ -514,6 +514,24 @@ body.embed-mode .viewer-card {
   font-size: 0.8rem;
 }
 
+/* Blink A/B & Difference Toolbar (Slice 7) */
+.ab-toolbar {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #1e293b;
+  flex-wrap: wrap;
+}
+
+.ab-status {
+  font-size: 0.75rem;
+  font-family: monospace;
+  color: var(--primary);
+  margin-left: auto;
+}
+
 /* Detailed Frame Info */
 .frame-details-line {
   font-size: 0.75rem;

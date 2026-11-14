@@ -149,6 +149,7 @@
         <label><input type="checkbox" id="toggle-compass" checked> Compass</label>
         <label><input type="checkbox" id="toggle-scale" checked> Scale Bar</label>
         <label><input type="checkbox" id="toggle-gaia" checked> Gaia DR3</label>
+        <label><input type="checkbox" id="toggle-neossat"> NEOSSat</label>
         <label><input type="checkbox" id="toggle-flags"> Flags</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
         <button type="button" id="toggle-aladin-btn" class="btn btn-chip">Aladin Context</button>
@@ -202,6 +203,15 @@
           <button type="button" id="blink-mode-btn" class="btn btn-chip" title="Toggle Time vs Wavelength Blink Mode">Blink: Time</button>
           <button type="button" id="loop-btn" class="btn btn-chip active" title="Toggle Loop (L)">Loop</button>
           <button type="button" id="bounce-btn" class="btn btn-chip" title="Toggle Bounce / Ping-Pong">Bounce</button>
+        </div>
+
+        <!-- Blink A/B & Difference Imaging Toolbar (Slice 7) -->
+        <div class="ab-toolbar">
+          <button type="button" id="set-frame-a-btn" class="btn btn-chip" title="Set current frame as reference Frame A">Set A</button>
+          <button type="button" id="set-frame-b-btn" class="btn btn-chip" title="Set current frame as comparison Frame B">Set B</button>
+          <button type="button" id="blink-ab-btn" class="btn btn-chip" title="Blink exclusively between Frame A and Frame B">Blink A/B</button>
+          <button type="button" id="diff-ab-btn" class="btn btn-chip" title="Toggle Image Subtraction (B - A)">Diff (B - A)</button>
+          <span id="ab-status" class="ab-status">A: Frame 1 &bull; B: Frame 2</span>
         </div>
 
         <div class="speed-control">

@@ -28,6 +28,15 @@ let audioNodes = [];
 let audioPlayheadAnimId = null;
 let clickedPixelCoords = null;
 
+// Blink A/B, Image Subtraction & NEOSSat State (Slice 7)
+let frameA = 0;
+let frameB = 1;
+let isAbBlinking = false;
+let abIntervalId = null;
+let isDiffMode = false;
+let diffImage = null;
+let neossatSources = [];
+
 // DOM Elements
 const appHeader = document.getElementById("app-header");
 const appFooter = document.getElementById("app-footer");
@@ -109,6 +118,14 @@ const stopAudioBtn = document.getElementById("stop-audio-btn");
 const closeSpectrumBtn = document.getElementById("close-spectrum-btn");
 const spectrumStats = document.getElementById("spectrum-stats");
 const spectrumPin = document.getElementById("spectrum-pin");
+
+// Blink A/B & Difference DOM Elements (Slice 7)
+const setFrameABtn = document.getElementById("set-frame-a-btn");
+const setFrameBBtn = document.getElementById("set-frame-b-btn");
+const blinkAbBtn = document.getElementById("blink-ab-btn");
+const diffAbBtn = document.getElementById("diff-ab-btn");
+const abStatus = document.getElementById("ab-status");
+const toggleNeossat = document.getElementById("toggle-neossat");
 
 const metaMjd = document.getElementById("meta-mjd");
 const metaDate = document.getElementById("meta-date");
@@ -246,6 +263,19 @@ function initEventListeners() {
       if (spectrumSection) spectrumSection.classList.add("hidden");
       if (spectrumPin) spectrumPin.classList.add("hidden");
       clickedPixelCoords = null;
+    });
+  }
+
+  // Blink A/B & Difference Controls (Slice 7)
+  if (setFrameABtn) setFrameABtn.addEventListener("click", () => setFrameA(currentFrameIndex));
+  if (setFrameBBtn) setFrameBBtn.addEventListener("click", () => setFrameB(currentFrameIndex));
+  if (blinkAbBtn) blinkAbBtn.addEventListener("click", toggleBlinkAb);
+  if (diffAbBtn) diffAbBtn.addEventListener("click", toggleDiffMode);
+  if (toggleNeossat) {
+    toggleNeossat.addEventListener("change", () => {
+      if (toggleNeossat.checked) {
+        fetchNeossatSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
+      }
     });
   }
 
@@ -596,6 +626,9 @@ async function loadSequenceResult(result) {
   frameSlider.value = "0";
 
   currentFrameIndex = 0;
+  frameA = 0;
+  frameB = Math.min(1, frames.length - 1);
+  updateAbStatus();
   showFrame(0);
 
   // Check prefers-reduced-motion before autoplay
@@ -647,6 +680,15 @@ function showFrame(index) {
   currentFrameIndex = index;
   frameSlider.value = index.toString();
   frameCounter.textContent = `${index + 1} / ${loadedImages.length}`;
+
+  if (isDiffMode && diffImage && diffImage.complete) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(diffImage, 0, 0, canvas.width, canvas.height);
+    metaDate.textContent = `Diff (B: #${frameB + 1} - A: #${frameA + 1})`;
+    metaMjd.textContent = `\u0394t: ${(frames[frameB].mjd - frames[frameA].mjd).toFixed(1)} d`;
+    metaWavelength.textContent = `Subtracted Frame`;
+    return;
+  }
 
   const img = loadedImages[index];
   if (img && img.complete) {
@@ -769,6 +811,26 @@ function drawGaiaOverlay(frame) {
       }
     }
   });
+
+  // NEOSSat CADC Asteroid/Satellite Overlay (Slice 7)
+  if (toggleNeossat && toggleNeossat.checked && neossatSources.length > 0) {
+    neossatSources.forEach((ast) => {
+      const pt = worldToCanvasPx(ast.ra, ast.dec);
+      if (pt && pt.x >= 0 && pt.x <= gaiaCanvas.width && pt.y >= 0 && pt.y <= gaiaCanvas.height) {
+        gaiaCtx.save();
+        gaiaCtx.translate(pt.x, pt.y);
+        gaiaCtx.rotate(Math.PI / 4);
+        gaiaCtx.strokeStyle = "#38bdf8";
+        gaiaCtx.lineWidth = 1.8;
+        gaiaCtx.strokeRect(-5, -5, 10, 10);
+        gaiaCtx.restore();
+
+        gaiaCtx.fillStyle = "#38bdf8";
+        gaiaCtx.font = "10px sans-serif";
+        gaiaCtx.fillText(ast.target_name || "NEOSSat", pt.x + 8, pt.y - 4);
+      }
+    });
+  }
 }
 
 function toggleBlinkMode() {
@@ -791,6 +853,9 @@ function toggleBlinkMode() {
 
   renderTableRows(frames);
   currentFrameIndex = 0;
+  frameA = 0;
+  frameB = Math.min(1, frames.length - 1);
+  updateAbStatus();
   showFrame(0);
 }
 
@@ -1426,4 +1491,98 @@ function stopAudioSonification() {
   }
   if (playAudioBtn) playAudioBtn.classList.remove("hidden");
   if (stopAudioBtn) stopAudioBtn.classList.add("hidden");
+}
+
+// Slice 7: Blink A/B & Image Subtraction
+function setFrameA(index) {
+  if (index < 0 || !frames[index]) return;
+  frameA = index;
+  updateAbStatus();
+  if (isDiffMode) loadAndShowDifference();
+}
+
+function setFrameB(index) {
+  if (index < 0 || !frames[index]) return;
+  frameB = index;
+  updateAbStatus();
+  if (isDiffMode) loadAndShowDifference();
+}
+
+function updateAbStatus() {
+  if (!abStatus) return;
+  const nameA = frames[frameA] ? `#${frameA + 1} (${frames[frameA].iso.slice(0, 10)})` : "--";
+  const nameB = frames[frameB] ? `#${frameB + 1} (${frames[frameB].iso.slice(0, 10)})` : "--";
+  abStatus.textContent = `A: ${nameA} \u2022 B: ${nameB}`;
+}
+
+function toggleBlinkAb() {
+  if (frames.length < 2) return;
+  stopPlayback();
+  isDiffMode = false;
+  if (diffAbBtn) diffAbBtn.classList.remove("active");
+
+  isAbBlinking = !isAbBlinking;
+  if (blinkAbBtn) blinkAbBtn.classList.toggle("active", isAbBlinking);
+
+  if (isAbBlinking) {
+    let currentAb = frameA;
+    showFrame(currentAb);
+    const intervalMs = Math.round(1000 / fps);
+    abIntervalId = setInterval(() => {
+      currentAb = currentAb === frameA ? frameB : frameA;
+      showFrame(currentAb);
+    }, intervalMs);
+  } else {
+    if (abIntervalId) {
+      clearInterval(abIntervalId);
+      abIntervalId = null;
+    }
+  }
+}
+
+async function toggleDiffMode() {
+  if (frames.length < 2) return;
+  stopPlayback();
+  if (isAbBlinking) toggleBlinkAb();
+
+  isDiffMode = !isDiffMode;
+  if (diffAbBtn) diffAbBtn.classList.toggle("active", isDiffMode);
+
+  if (isDiffMode) {
+    await loadAndShowDifference();
+  } else {
+    diffImage = null;
+    showFrame(currentFrameIndex);
+  }
+}
+
+async function loadAndShowDifference() {
+  if (!currentSequenceKey || frames.length < 2) return;
+  const url = `/api/v1/sequences/${currentSequenceKey}/difference.png?frame_a=${frameA}&frame_b=${frameB}`;
+  const img = new Image();
+  img.onload = () => {
+    diffImage = img;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    metaDate.textContent = `Diff (B: #${frameB + 1} - A: #${frameA + 1})`;
+    const dt = Math.abs((frames[frameB]?.mjd || 0) - (frames[frameA]?.mjd || 0));
+    metaMjd.textContent = `\u0394t: ${dt.toFixed(1)} d`;
+    metaWavelength.textContent = `Image Subtraction`;
+  };
+  img.src = url;
+}
+
+async function fetchNeossatSources(ra, dec, radiusArcmin) {
+  try {
+    const res = await fetch(`/api/v1/catalog/neossat?ra=${ra}&dec=${dec}&radius_arcmin=${radiusArcmin}`);
+    if (res.ok) {
+      const data = await res.json();
+      neossatSources = data.observations || [];
+      if (frames[currentFrameIndex]) {
+        drawGaiaOverlay(frames[currentFrameIndex]);
+      }
+    }
+  } catch {
+    neossatSources = [];
+  }
 }

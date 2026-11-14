@@ -120,6 +120,23 @@ Acceptance:
 - [x] Unit tests in `backend/tests/test_slice6.py` cover coordinate bounds, pixel extraction, spectrum sorting, and audio synthesis guards.
 - [x] Strict zero `innerHTML` compliance verified across `frontend/`.
 
+## Slice 7: Image Subtraction (Difference Imaging), Blink A/B Mode & CADC NEOSSat Cross-Matching (STRETCH)
+
+Build:
+- `backend/app/render.py`: `render_difference_png` symmetric zero-centered stretch (128 neutral gray, > 128 brightening, < 128 dimming).
+- `backend/app/cache.py`: difference image caching (`get_frame_difference_path`, `put_frame_difference_png`).
+- `backend/app/api.py`: `GET /sequences/{key}/difference.png?frame_a={i}&frame_b={j}` (computes difference via spectral cube or fallback image subtraction) and `GET /catalog/neossat`.
+- `backend/app/catalogs.py`: `query_cadc_neossat` querying CADC TAP for NEOSSat asteroid/satellite observations.
+- Frontend Blink A/B Toolbar: "Set A", "Set B", "Blink A/B", "Diff (B - A)", and active status indicators.
+- Frontend NEOSSat Overlay: diamond markers for detected moving asteroids and satellites.
+
+Acceptance:
+- [x] Difference PNG renders dipole for moving objects with neutral gray background.
+- [x] Blink A/B alternates seamlessly between selected frames A and B at set FPS.
+- [x] CADC NEOSSat catalog queries return observational cross-matches.
+- [x] Unit tests in `backend/tests/test_slice7.py` pass.
+- [x] Strict zero `innerHTML` compliance verified across `frontend/`.
+
 ---
 
 ## Priority / cut-list (drop from the top first if time is short)
