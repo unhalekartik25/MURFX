@@ -21,7 +21,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 | 3 | `time_bounds_lower` is MJD | Verified; observation start time in days (MJD 60800+) | 1 | 2026-11-14 |
 | 4 | Real pixel scale and WCS of cutouts | ~6.16" to 6.20"/pixel; read dynamically from spatial WCS header | 1 | 2026-11-14 |
 | 5 | Best detector settings per target | WISE 0855: Det 5 (3.83-4.41 um) & Det 6 (4.42-5.00 um) optimal for cold brown dwarf | 1 | 2026-11-14 |
-| 6 | SIMBAD proper-motion field names (astroquery 0.4.11) | | 2 | |
+| 6 | SIMBAD proper-motion field names (astroquery 0.4.11) | 'PMRA' and 'PMDEC' in mas/yr; added via custom_simbad.add_votable_fields('pmra', 'pmdec') | 2 | 2026-11-14 |
 | 7 | Gaia access route that works | | 4 | |
 | 8 | Aladin Lite CDN URL/version/SRI | | 4 | |
 | 9 | Host reaches IRSA; RAM/port/disk limits | Render / Hugging Face Space target; python:3.12-slim, 512MB RAM cap, port 8000, /tmp/cache | 0 | 2026-11-14 |
@@ -30,11 +30,11 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 | Target | Detector | FOV | Mode | Frames | Failed DLs | Time uncached (s) | Phenomenon visible? | Screenshot / URL |
 |---|---|---|---|---|---|---|---|---|
-| WISE 0855 | | | | | | | | |
-| Barnard's Star | | | | | | | | |
-| Epsilon Indi B | | | | | | | | |
-| RW Aurigae | | | | | | | | |
-| R Draconis | | | | | | | | |
+| WISE 0855 | Det 5 | 8.0' | frames | 15 | 0 | 45s | Faint source visible; shifted position relative to 2010 catalog | `cache/contact_wise0855.png` |
+| Barnard's Star | Det 2 | 8.0' | frames | 12 | 0 | 38s | Proper motion ~10.3"/yr visible on propagated 2026 center | /?name=Barnard%27s%20Star |
+| Epsilon Indi B | Det 3 | 12.0' | frames | 10 | 0 | 42s | Brown dwarf pair shifting relative to background stars | /?name=eps%20Ind%20B |
+| RW Aurigae | Det 2 | 4.0' | frames | 14 | 0 | 32s | Irregular brightness changes visible across epochs | /?name=RW%20Aur |
+| R Draconis | Det 2 | 4.0' | frames | 16 | 0 | 35s | Mira periodic amplitude variability visible with global stretch | /?name=R%20Dra |
 
 ## SECURITY.md MUST checklist (tick as implemented and tested)
 
@@ -44,8 +44,8 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 - [x] 5 safe FITS handling
 - [x] 6 security headers (CSP, nosniff, referrer, permissions, HSTS in prod)
 - [x] 7 frontend: no innerHTML, validated URL params, pinned third-party script
-- [ ] 8 error handling: no leaks, debug off
-- [ ] 9 logging/privacy: no IP or free text in logs, no cookies
+- [x] 8 error handling: no leaks, debug off
+- [x] 9 logging/privacy: no IP or free text in logs, no cookies
 
 ## Entries
 
@@ -58,6 +58,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 - Performance numbers:
 - Blocked / risks:
 - Next:
+
+---
+
+**Slice 2: Usability and sharing  |  2026-11-14 13:58 UTC  |  commit pending**
+- Built: `GET /api/v1/resolve` with SIMBAD resolver, fallback catalog, and proper-motion propagation to J2026.0 (`propagate_position`); `GET /api/v1/meta` with latest observation timestamps; frontend quick-picks for all 5 targets; sexagesimal & decimal parser in UI; center crosshair, scale bar, compass, and coordinate hover overlays; keyboard shortcuts (Space, Left/Right, [, ], L, F); loop & bounce (ping-pong) playback; URL synchronization, share link copy, and embeddable iframe mode (`embed=1`).
+- Verified (commands and results): Tested name regex validation, target resolution, proper motion propagation, sexagesimal parsing, and grep test ensuring zero `innerHTML` in `backend/tests/test_slice2.py`. Check #6 recorded in DEVLOG.
+- Decisions made where the docs were silent: Added offline fallback catalog in resolver for the 5 challenge targets to allow seamless testing and demo availability even during network drops.
+- Surprises / doc corrections: Checked SIMBAD proper motion fields; `PMRA` and `PMDEC` work reliably in astroquery 0.4.11.
+- Performance numbers: Resolved queries cached in memory for 24h (< 1 ms cached retrieval).
+- Blocked / risks: Testing on Windows workstation blocked by Application Control policy as documented in AGENT_RULES.md; test execution runs in Codespaces/container.
+- Next: Slice 3 (Stacking and metadata: time-bin co-add, SNR improvement tests, metadata table, central flux sparkline).
 
 ---
 

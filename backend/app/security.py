@@ -114,5 +114,6 @@ class InMemoryTokenBucket:
 # Global rate limiter instances (per IP)
 general_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_general_per_min)
 create_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_create_per_min, burst=settings.rate_create_per_min)
+resolve_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_resolve_per_min, burst=settings.rate_resolve_per_min)
 frames_limiter = InMemoryTokenBucket(rate_per_min=settings.rate_frames_per_min, burst=100)
 deep_health_limiter = InMemoryTokenBucket(rate_per_min=2, burst=2)

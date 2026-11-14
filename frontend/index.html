@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="app-header">
+  <header id="app-header" class="app-header">
     <div class="header-container">
       <h1>SPHEREx Wise-Cube &amp; Blink Explorer</h1>
       <p class="tagline">Explore infrared time-series views and moving celestial objects with SPHEREx data</p>
@@ -15,9 +15,31 @@
   </header>
 
   <main class="app-container">
+    <!-- Quick-Pick Targets Bar -->
+    <section id="quick-picks-section" class="quick-picks-bar" aria-label="Quick-pick challenge targets">
+      <span class="quick-pick-label">Challenge Targets:</span>
+      <div class="quick-pick-buttons">
+        <button type="button" class="btn btn-chip" data-target="wise0855">WISE 0855</button>
+        <button type="button" class="btn btn-chip" data-target="barnard">Barnard's Star</button>
+        <button type="button" class="btn btn-chip" data-target="epsind">Epsilon Indi B</button>
+        <button type="button" class="btn btn-chip" data-target="rwaur">RW Aurigae</button>
+        <button type="button" class="btn btn-chip" data-target="rdra">R Draconis</button>
+      </div>
+    </section>
+
     <!-- Controls Panel -->
-    <section class="controls-card" aria-label="Target Coordinates and Settings">
+    <section id="controls-section" class="controls-card" aria-label="Target Coordinates and Settings">
       <form id="sequence-form" class="form-grid">
+        <!-- Target Name / Search Input -->
+        <div class="form-group form-group-full">
+          <label for="target-input">Target Name or Coordinates (Decimal or Sexagesimal)</label>
+          <div class="input-with-button">
+            <input type="text" id="target-input" placeholder="e.g. Barnard's Star, 133.795125 -7.245147, or 08h55m10.8s -07d14m42.5s" value="WISE 0855">
+            <button type="button" id="resolve-btn" class="btn btn-secondary">Resolve / Parse</button>
+          </div>
+          <span id="resolve-status" class="input-hint"></span>
+        </div>
+
         <div class="form-group">
           <label for="ra-input">Right Ascension (deg)</label>
           <input type="number" id="ra-input" name="ra" step="0.000001" min="0" max="359.999999" value="133.795125" required>
@@ -46,18 +68,61 @@
         </div>
 
         <div class="form-group">
-          <label for="mode-select">Mode</label>
+          <label for="mode-select">Sequence Mode</label>
           <select id="mode-select" name="mode">
-            <option value="frames" selected>Time Blink (Single Frames)</option>
-            <option value="stack">Stack Mode (Time Binned)</option>
+            <option value="frames" selected>Time Blink (Each Exposure)</option>
+            <option value="stack">Stacked (Time Bins)</option>
           </select>
         </div>
 
+        <!-- Advanced Options Collapsible -->
+        <details id="advanced-options" class="form-group-full advanced-details">
+          <summary>Advanced Options (Background, Masking, Stretch, Binning)</summary>
+          <div class="advanced-grid">
+            <div class="form-group">
+              <label for="bg-select">Background Subtraction</label>
+              <select id="bg-select" name="background">
+                <option value="median" selected>Median (recommended)</option>
+                <option value="zodi">Zodiacal Model + Median</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="mask-select">Masking Level</label>
+              <select id="mask-select" name="mask_level">
+                <option value="minimal" selected>Minimal (unusable only)</option>
+                <option value="strict">Strict (artifacts/outliers)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="stretch-select">Stretch Scale</label>
+              <select id="stretch-select" name="stretch">
+                <option value="global" selected>Global (consistent brightness)</option>
+                <option value="frame">Per-Frame</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="bin-input">Stack Window (Days)</label>
+              <input type="number" id="bin-input" name="bin_days" min="1" max="180" value="30">
+            </div>
+            <div class="form-group">
+              <label for="max-frames-input">Max Exposures</label>
+              <input type="number" id="max-frames-input" name="max_frames" min="2" max="150" value="60">
+            </div>
+          </div>
+        </details>
+
         <div class="form-actions">
           <button type="submit" id="submit-btn" class="btn btn-primary">Show Sky</button>
-          <button type="button" id="quick-wise-btn" class="btn btn-secondary">Load WISE 0855</button>
+          <button type="button" id="share-link-btn" class="btn btn-secondary">Copy Share Link</button>
+          <button type="button" id="embed-snippet-btn" class="btn btn-secondary">Embed</button>
         </div>
       </form>
+    </section>
+
+    <!-- Notices & Warnings -->
+    <section id="warnings-section" class="notices-card hidden" role="region" aria-label="Warnings">
+      <p id="warnings-text"></p>
     </section>
 
     <!-- Progress Indicator -->
@@ -78,8 +143,35 @@
 
     <!-- Viewer & Canvas Player -->
     <section class="viewer-card">
-      <div class="canvas-wrapper">
+      <!-- Overlay Toggles -->
+      <div class="overlay-toolbar">
+        <label><input type="checkbox" id="toggle-crosshair" checked> Crosshair</label>
+        <label><input type="checkbox" id="toggle-compass" checked> Compass</label>
+        <label><input type="checkbox" id="toggle-scale" checked> Scale Bar</label>
+        <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
+        <span id="hover-coords" class="hover-coords">RA: --, Dec: --</span>
+      </div>
+
+      <!-- Main Canvas Container -->
+      <div class="canvas-wrapper" id="canvas-container" tabindex="0" title="Click or use keyboard shortcuts (Space, Left/Right, [, ], L)">
         <canvas id="blink-canvas" width="400" height="400"></canvas>
+        
+        <!-- Center Crosshair Layer -->
+        <div id="crosshair-layer" class="crosshair-overlay"></div>
+
+        <!-- Compass Layer (N top, E left) -->
+        <div id="compass-layer" class="compass-overlay">
+          <span class="compass-n">N &uarr;</span>
+          <span class="compass-e">&larr; E</span>
+        </div>
+
+        <!-- Scale Bar Layer -->
+        <div id="scale-layer" class="scale-overlay">
+          <div id="scale-bar-line" class="scale-bar-line"></div>
+          <span id="scale-bar-text" class="scale-bar-text">1'</span>
+        </div>
+
+        <!-- Frame Overlay Info -->
         <div id="canvas-overlay" class="canvas-overlay">
           <span id="meta-mjd">MJD: --</span>
           <span id="meta-date">Date: --</span>
@@ -89,30 +181,56 @@
 
       <!-- Player Controls -->
       <div class="player-controls">
-        <button type="button" id="play-pause-btn" class="btn btn-icon" title="Play / Pause" disabled>&gt;</button>
-        <button type="button" id="step-prev-btn" class="btn btn-icon" title="Step Back" disabled>&laquo;</button>
-        <button type="button" id="step-next-btn" class="btn btn-icon" title="Step Forward" disabled>&raquo;</button>
+        <button type="button" id="play-pause-btn" class="btn btn-icon" title="Play / Pause (Space)" disabled>&gt;</button>
+        <button type="button" id="step-prev-btn" class="btn btn-icon" title="Step Back (Left Arrow)" disabled>&laquo;</button>
+        <button type="button" id="step-next-btn" class="btn btn-icon" title="Step Forward (Right Arrow)" disabled>&raquo;</button>
         
         <div class="timeline-control">
           <input type="range" id="frame-slider" min="0" max="0" value="0" disabled>
           <span id="frame-counter" class="frame-counter">0 / 0</span>
         </div>
 
+        <div class="playback-options">
+          <button type="button" id="loop-btn" class="btn btn-chip active" title="Toggle Loop (L)">Loop</button>
+          <button type="button" id="bounce-btn" class="btn btn-chip" title="Toggle Bounce / Ping-Pong">Bounce</button>
+        </div>
+
         <div class="speed-control">
-          <label for="speed-select">Speed:</label>
+          <label for="speed-select">FPS:</label>
           <select id="speed-select">
-            <option value="500">Slow (2 fps)</option>
-            <option value="250" selected>Normal (4 fps)</option>
-            <option value="125">Fast (8 fps)</option>
+            <option value="1">1 fps</option>
+            <option value="2">2 fps</option>
+            <option value="4" selected>4 fps</option>
+            <option value="8">8 fps</option>
+            <option value="12">12 fps</option>
+            <option value="15">15 fps</option>
           </select>
         </div>
       </div>
+
+      <!-- Detailed Frame Information Line -->
+      <div class="frame-details-line">
+        <span id="detail-date">Date: --</span> &bull;
+        <span id="detail-mjd">MJD: --</span> &bull;
+        <span id="detail-wavelength">Wavelength: --</span> &bull;
+        <span id="detail-detector">Detector: --</span> &bull;
+        <span id="detail-exposures">Exposures: --</span> &bull;
+        <span id="detail-flagged">Flagged: --</span> &bull;
+        <span id="detail-version">Version: --</span>
+      </div>
+    </section>
+
+    <!-- Embed Snippet Modal / Box -->
+    <section id="embed-box" class="embed-box hidden">
+      <h3>Embed in your Website (Iframe)</h3>
+      <textarea id="embed-code-text" readonly rows="3"></textarea>
+      <button type="button" id="close-embed-btn" class="btn btn-secondary">Close</button>
     </section>
   </main>
 
-  <footer class="app-footer">
-    <p>Data provided by NASA SPHEREx / IPAC / IRSA / Caltech.</p>
-    <p>Built for NASA Space Apps Challenge 2026 ("Planet X and SPHEREx").</p>
+  <footer id="app-footer" class="app-footer">
+    <p>Data provided by NASA SPHEREx / IPAC / IRSA / Caltech &bull; Built for NASA Space Apps Challenge 2026 ("Planet X and SPHEREx").</p>
+    <p><span id="data-through-text">Data through: SPHEREx Operations</span> &bull; <a href="https://github.com/unhalekartik25/MURFX" target="_blank" rel="noopener">GitHub Repository</a></p>
   </footer>
 
   <script type="module" src="app.js"></script>

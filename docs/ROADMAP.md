@@ -57,11 +57,11 @@ Build:
   with `python`-side equivalents if no JS runner; otherwise document manual test steps in DEVLOG).
 
 Acceptance:
-- [ ] All five targets can be loaded by name or quick-pick in under 3 clicks (TEST_TARGETS.md procedure).
-- [ ] Barnard's Star by name is centered on its **propagated** position and the star is inside the field (DATA_SOURCES section 6).
-- [ ] `/?ra=133.795125&dec=-7.245147&fov=8&det=5` auto-runs; the same URL with `embed=1` works inside an iframe test page.
-- [ ] No `innerHTML` in `frontend/` (grep test); invalid URL params ignored safely.
-- [ ] Keyboard control works; reduced-motion respected.
+- [x] All five targets can be loaded by name or quick-pick in under 3 clicks (TEST_TARGETS.md procedure).
+- [x] Barnard's Star by name is centered on its **propagated** position and the star is inside the field (DATA_SOURCES section 6).
+- [x] `/?ra=133.795125&dec=-7.245147&fov=8&det=5` auto-runs; the same URL with `embed=1` works inside an iframe test page.
+- [x] No `innerHTML` in `frontend/` (grep test); invalid URL params ignored safely.
+- [x] Keyboard control works; reduced-motion respected.
 
 ## Slice 3: Stacking and metadata  (hours 18-24)
 

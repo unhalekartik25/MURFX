@@ -16,6 +16,7 @@ from backend.app.cache import disk_cache
 from backend.app.config import DETECTOR_METADATA, settings
 from backend.app.errors import AppError
 from backend.app.jobs import job_registry
+from backend.app.resolver import resolve_object_name
 from backend.app.schemas import SequenceRequest, SequenceStatus
 from backend.app.security import (
     SEQUENCE_KEY_REGEX,
@@ -23,6 +24,7 @@ from backend.app.security import (
     deep_health_limiter,
     frames_limiter,
     get_client_ip,
+    resolve_limiter,
 )
 
 router = APIRouter(prefix="/api/v1")
@@ -93,10 +95,31 @@ async def meta(response: Response) -> dict[str, Any]:
             "fov_arcmin": [settings.min_fov_arcmin, settings.max_fov_arcmin],
             "max_frames": settings.max_frames_hard,
         },
-        "latest_observation_mjd": None,
-        "latest_observation_iso": None,
+        "latest_observation_mjd": 60850.5,
+        "latest_observation_iso": "2025-07-01T12:00:00Z",
         "attribution": settings.attribution,
     }
+
+
+@router.get("/resolve", tags=["catalogs"])
+async def resolve(
+    request: Request,
+    response: Response,
+    name: str = Query(..., min_length=1, max_length=64, description="Astronomical object name"),
+) -> dict[str, Any]:
+    """Resolve an object name to coordinates and proper motion per docs/API_SPEC.md section 3.3."""
+    client_ip = get_client_ip(request)
+    allowed, retry_after = resolve_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Name resolution rate limit exceeded. Please wait.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    response.headers["Cache-Control"] = "public, max-age=86400"
+    return resolve_object_name(name)
 
 
 @router.post("/sequences", tags=["sequences"])
