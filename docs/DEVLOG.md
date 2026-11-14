@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 1: Core loop, one target end to end (WISE 0855)  |  2026-11-14 13:45 UTC  |  commit pending**
+**Slice 1: Core loop, one target end to end (WISE 0855)  |  2026-11-14 13:45 UTC  |  commit 940415f**
 - Built: `schemas.py` (`SequenceRequest`, `SequenceStatus`, `SequenceResult`, `FrameInfo`), `irsa.py` (ADQL builder, URI validator, cutout URL builder, TAP cache), `cutouts.py` (defensive FITS parsing, spectral WCS calculation, streaming download with retries), `processing.py` (minimal/strict masking, background subtraction, common tangent grid creation, reprojection, time bin stacking, asinh stretching), `render.py` (LA grayscale+alpha PNG with North top/row 0), `cache.py` (LRU eviction disk cache), `jobs.py` (job registry, worker thread pool, deduplication), `pipeline.py` (orchestration), `scripts/run_targets.py` (direct target verification & contact sheet generator), updated `api.py` (`POST /sequences`, `GET /sequences/{key}`, `GET /sequences/{key}/frames/{i}.png`), and frontend blink canvas player in `frontend/app.js` and `frontend/index.html`.
 - Verified (commands and results): Tested schema validation, ADQL injection rejection, path traversal rejection, masking bit rules (SOURCE never masked), and WCS grid orientation (North up, East left) in `backend/tests/test_slice1.py`.
 - Decisions made where the docs were silent: Asinh non-linear stretch scaling factor set to `(vmax - vmin) / 10.0` for high dynamic range in faint infrared scenes.
