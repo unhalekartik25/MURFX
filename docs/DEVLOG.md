@@ -61,7 +61,7 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
-**Slice 2: Usability and sharing  |  2026-11-14 13:58 UTC  |  commit pending**
+**Slice 2: Usability and sharing  |  2026-11-14 13:58 UTC  |  commit 4fab6d9**
 - Built: `GET /api/v1/resolve` with SIMBAD resolver, fallback catalog, and proper-motion propagation to J2026.0 (`propagate_position`); `GET /api/v1/meta` with latest observation timestamps; frontend quick-picks for all 5 targets; sexagesimal & decimal parser in UI; center crosshair, scale bar, compass, and coordinate hover overlays; keyboard shortcuts (Space, Left/Right, [, ], L, F); loop & bounce (ping-pong) playback; URL synchronization, share link copy, and embeddable iframe mode (`embed=1`).
 - Verified (commands and results): Tested name regex validation, target resolution, proper motion propagation, sexagesimal parsing, and grep test ensuring zero `innerHTML` in `backend/tests/test_slice2.py`. Check #6 recorded in DEVLOG.
 - Decisions made where the docs were silent: Added offline fallback catalog in resolver for the 5 challenge targets to allow seamless testing and demo availability even during network drops.
