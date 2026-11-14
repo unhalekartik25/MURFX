@@ -19,7 +19,13 @@ from backend.app.errors import AppError
 from backend.app.jobs import job_registry
 from backend.app.render import render_animation_gif, render_difference_png
 from backend.app.resolver import resolve_object_name
-from backend.app.schemas import SequenceRequest, SequenceStatus, SpectrumPoint, SpectrumResult
+from backend.app.schemas import (
+    CandidateFinding,
+    SequenceRequest,
+    SequenceStatus,
+    SpectrumPoint,
+    SpectrumResult,
+)
 from backend.app.security import (
     SEQUENCE_KEY_REGEX,
     create_limiter,
@@ -498,90 +504,6 @@ async def get_neossat_catalog(
     )
 
 
-@router.get("/sequences/{key}/stack.fits", tags=["sequences"])
-async def export_sequence_fits(
-    request: Request,
-    key: str = FPath(..., description="32-character hex sequence key"),
-) -> FileResponse:
-    """Export the sequence as a calibrated scientific FITS image with WCS (Slice 9).
-
-    Cache-Control: public, max-age=86400
-    """
-    if not SEQUENCE_KEY_REGEX.match(key):
-        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
-
-    client_ip = get_client_ip(request)
-    allowed, retry_after = frames_limiter.consume(client_ip)
-    if not allowed:
-        raise AppError(
-            code="RATE_LIMITED",
-            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
-            message="Export rate limit exceeded.",
-            headers={"Retry-After": str(int(retry_after))},
-        )
-
-    # Check cached FITS file
-    cached_fits = disk_cache.get_sequence_fits_path(key)
-    if cached_fits and cached_fits.exists():
-        return FileResponse(
-            path=str(cached_fits),
-            media_type="application/fits",
-            headers={
-                "Cache-Control": "public, max-age=86400",
-                "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
-            },
-        )
-
-    meta = disk_cache.get_sequence_meta(key)
-    if not meta:
-        raise AppError("NOT_FOUND", 404, f"Sequence key '{key}' not found.")
-
-    import io
-    import numpy as np
-    from astropy.io import fits
-    from astropy.wcs import WCS
-
-    grid_meta = meta.get("grid", {})
-    wcs_dict = grid_meta.get("wcs", {})
-    w = grid_meta.get("width", 20)
-    h = grid_meta.get("height", 20)
-
-    cube = disk_cache.get_sequence_cube(key)
-    if cube is not None:
-        data = cube["data"]  # shape (N, H, W)
-        stacked = np.nanmean(data, axis=0)
-        fits_data = np.flipud(stacked)  # Row 0 South for FITS
-    else:
-        fits_data = np.zeros((h, w), dtype=np.float32)
-
-    wcs_obj = WCS(naxis=2)
-    wcs_obj.wcs.ctype = wcs_dict.get("ctype", ["RA---TAN", "DEC--TAN"])
-    wcs_obj.wcs.crval = wcs_dict.get("crval", [meta.get("request", {}).get("ra", 0.0), meta.get("request", {}).get("dec", 0.0)])
-    wcs_obj.wcs.crpix = wcs_dict.get("crpix", [w / 2.0, h / 2.0])
-    wcs_obj.wcs.cdelt = wcs_dict.get("cdelt_deg", [-0.000856, 0.000856])
-
-    header = wcs_obj.to_header()
-    header["BUNIT"] = ("MJy/sr", "Surface brightness")
-    header["CREATOR"] = ("MURFX SPHEREx Explorer", "NASA Space Apps 2026")
-    header["TELESCOP"] = ("SPHEREx", "NASA SPHEREx Mission")
-    header["SEQ_KEY"] = (key, "Sequence Hash")
-    header["NFRAMES"] = (len(meta.get("frames", [])), "Number of frames")
-
-    hdu = fits.PrimaryHDU(data=fits_data.astype(np.float32), header=header)
-    bio = io.BytesIO()
-    hdu.writeto(bio)
-    fits_bytes = bio.getvalue()
-    fits_path = disk_cache.put_sequence_fits(key, fits_bytes)
-
-    return FileResponse(
-        path=str(fits_path),
-        media_type="application/fits",
-        headers={
-            "Cache-Control": "public, max-age=86400",
-            "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
-        },
-    )
-
 
 @router.get("/sequences/{key}/export.gif", tags=["sequences"])
 async def export_sequence_gif(
@@ -746,3 +668,22 @@ async def export_sequence_fits(
             "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_stack.fits"',
         },
     )
+
+
+@router.post("/candidates", status_code=status.HTTP_201_CREATED, tags=["candidates"])
+async def create_candidate(finding: CandidateFinding) -> dict[str, Any]:
+    """Log a citizen science candidate or moving object finding (Slice 10)."""
+    import datetime
+
+    finding_dict = finding.model_dump()
+    if not finding_dict.get("created_at"):
+        finding_dict["created_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    saved = disk_cache.save_candidate(finding_dict)
+    return saved
+
+
+@router.get("/candidates", tags=["candidates"])
+async def list_candidates(sequence_key: str | None = Query(default=None, description="Filter by sequence hash")) -> list[dict[str, Any]]:
+    """List citizen science discovery findings (Slice 10)."""
+    return disk_cache.get_candidates(sequence_key=sequence_key)
+

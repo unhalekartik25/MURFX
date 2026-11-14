@@ -173,6 +173,29 @@ Acceptance:
 
 ---
 
+## Slice 10 — Citizen Science Discovery Logger, Interactive Motion Ruler & Guided Challenge Tour
+
+Goal: Empower citizen scientists participating in the NASA Space Apps Challenge 2026 ("Planet X and SPHEREx") with interactive measurement tools to identify, measure, and record candidate fast-moving objects, brown dwarfs, and infrared transients, coupled with an educational guided challenge tour.
+
+Build:
+- `backend/app/schemas.py`: `CandidateFinding` model with validated coordinate bounds, classification taxonomy, and motion metrics.
+- `backend/app/cache.py`: Atomic JSON persistence (`save_candidate`, `get_candidates`).
+- `backend/app/api.py`: `POST /api/v1/candidates` (201 Created with ISO timestamp) and `GET /api/v1/candidates` with sequence key filtering.
+- Frontend Interactive Motion Ruler: 2-click vector measurement tool calculating sky separation ($\Delta \theta$ in arcseconds), Position Angle (PA, degrees East of North), and annual proper motion rate ($\mu$ in arcsec/yr) between blink reference epochs.
+- Frontend Citizen Science Discovery Logger: candidate logging drawer with auto-populated coordinates and motion measurements, classification dropdown, and sequence findings list.
+- Frontend Guided Challenge Tour: interactive step-by-step walkthrough across the 5 Space Apps challenge targets (WISE 0855, Barnard's Star, Epsilon Indi B, RW Aurigae, R Draconis) with contextual science notes and one-click target loading.
+
+Acceptance:
+- [x] `CandidateFinding` validates coordinates, classifications, and lengths; rejects invalid bounds.
+- [x] `POST /api/v1/candidates` atomically saves candidate findings and returns 201 Created with timestamp.
+- [x] `GET /api/v1/candidates` retrieves findings filtered by sequence key.
+- [x] Motion ruler accurately calculates sky separation, position angle (degrees East of North), and annual motion rate.
+- [x] Guided Challenge Tour cycles through 5 challenge targets with contextual science notes and one-click loading.
+- [x] Unit tests in `backend/tests/test_slice10.py` pass.
+- [x] Strict zero `innerHTML` compliance verified across `frontend/`.
+
+---
+
 ## Priority / cut-list (drop from the top first if time is short)
 
 1. Aladin Lite panel (keep the canvas Gaia overlay or the add/subtract backup)

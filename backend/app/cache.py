@@ -211,6 +211,31 @@ class DiskCache:
         self._atomic_write_bytes(fits_path, data)
         return fits_path
 
+    def get_candidates(self, sequence_key: str | None = None) -> list[dict[str, Any]]:
+        """Retrieve citizen science discovery candidates, optionally filtered by sequence_key (Slice 10)."""
+        candidates_file = self.root / "candidates.json"
+        if not candidates_file.exists():
+            return []
+        try:
+            with candidates_file.open("r", encoding="utf-8") as f:
+                data = json.load(f)
+            if not isinstance(data, list):
+                return []
+            if sequence_key:
+                return [c for c in data if c.get("sequence_key") == sequence_key]
+            return data
+        except Exception as e:
+            logger.warning("Failed to load candidates.json: %s", e)
+            return []
+
+    def save_candidate(self, finding: dict[str, Any]) -> dict[str, Any]:
+        """Atomically persist a candidate finding to candidates.json (Slice 10)."""
+        candidates_file = self.root / "candidates.json"
+        candidates = self.get_candidates(sequence_key=None)
+        candidates.append(finding)
+        self._atomic_write_bytes(candidates_file, json.dumps(candidates, indent=2).encode("utf-8"))
+        return finding
+
     def _atomic_write_bytes(self, destination: Path, data: bytes) -> None:
         """Write to a temporary file in the same directory, then atomically replace destination."""
         dest_dir = destination.parent

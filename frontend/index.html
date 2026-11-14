@@ -25,6 +25,7 @@
         <button type="button" class="btn btn-chip" data-target="rwaur">RW Aurigae</button>
         <button type="button" class="btn btn-chip" data-target="rdra">R Draconis</button>
       </div>
+      <button type="button" id="start-tour-btn" class="btn btn-secondary btn-tour" title="Interactive step-by-step tour of challenge objects">&#128640; Guided Challenge Tour</button>
     </section>
 
     <!-- Controls Panel -->
@@ -159,10 +160,12 @@
         <label><input type="checkbox" id="toggle-gaia" checked> Gaia DR3</label>
         <label><input type="checkbox" id="toggle-wise" checked> AllWISE 2010</label>
         <label><input type="checkbox" id="toggle-neossat"> NEOSSat</label>
+        <label><input type="checkbox" id="toggle-ruler"> Ruler</label>
         <label><input type="checkbox" id="toggle-flags"> Flags</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
         <label><input type="checkbox" id="toggle-invert"> Invert</label>
         <button type="button" id="toggle-aladin-btn" class="btn btn-chip">Aladin Context</button>
+        <button type="button" id="open-candidate-btn" class="btn btn-chip" title="Citizen Science Candidate Discovery Logger">&#128221; Log Candidate</button>
         <span id="hover-coords" class="hover-coords">RA: --, Dec: --</span>
       </div>
 
@@ -171,6 +174,8 @@
         <canvas id="blink-canvas" width="400" height="400"></canvas>
         <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
         <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="400" height="400"></canvas>
+        <canvas id="ruler-canvas" class="ruler-overlay-canvas" width="400" height="400"></canvas>
+        <div id="ruler-readout" class="ruler-readout hidden"></div>
         
         <!-- Center Crosshair Layer -->
         <div id="crosshair-layer" class="crosshair-overlay"></div>
@@ -333,6 +338,87 @@
       <textarea id="embed-code-text" readonly rows="3"></textarea>
       <button type="button" id="close-embed-btn" class="btn btn-secondary">Close</button>
     </section>
+    <!-- Citizen Science Candidate Discovery Logger (Slice 10) -->
+    <section id="candidate-section" class="candidate-card hidden">
+      <div class="candidate-header">
+        <div>
+          <h3>Citizen Science Discovery Logger</h3>
+          <p class="section-subtitle">Record and submit candidate Planet X bodies, fast-moving asteroids, brown dwarfs, or infrared variables.</p>
+        </div>
+        <button type="button" id="close-candidate-btn" class="btn btn-chip" aria-label="Close Candidate Logger">&times;</button>
+      </div>
+
+      <form id="candidate-form" class="candidate-grid">
+        <div class="form-group">
+          <label for="cand-name">Observer / Object Name</label>
+          <input type="text" id="cand-name" placeholder="e.g. PX-01, Citizen Hunter" required>
+        </div>
+        <div class="form-group">
+          <label for="cand-class">Classification</label>
+          <select id="cand-class">
+            <option value="Planet X Candidate" selected>Planet X Candidate</option>
+            <option value="Brown Dwarf">Brown Dwarf</option>
+            <option value="Near-Earth Asteroid">Near-Earth Asteroid</option>
+            <option value="Variable Star">Variable Star</option>
+            <option value="Transient / Flare">Transient / Flare</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cand-ra">Right Ascension (deg)</label>
+          <input type="number" id="cand-ra" step="0.000001" required>
+        </div>
+        <div class="form-group">
+          <label for="cand-dec">Declination (deg)</label>
+          <input type="number" id="cand-dec" step="0.000001" required>
+        </div>
+        <div class="form-group">
+          <label for="cand-motion">Proper Motion (arcsec/yr)</label>
+          <input type="number" id="cand-motion" step="0.01" value="0.0">
+        </div>
+        <div class="form-group">
+          <label for="cand-pa">Position Angle (deg E of N)</label>
+          <input type="number" id="cand-pa" step="0.1" value="0.0">
+        </div>
+        <div class="form-group form-group-full">
+          <label for="cand-notes">Observational Notes</label>
+          <input type="text" id="cand-notes" placeholder="e.g. Detected fast shift between Frame 1 and 4 in D5. Motion ruler verified." maxlength="256">
+        </div>
+        <div class="form-actions form-group-full">
+          <button type="submit" id="save-candidate-btn" class="btn btn-primary">&#128206; Save Discovery Finding</button>
+          <span id="candidate-status" class="candidate-status"></span>
+        </div>
+      </form>
+
+      <div class="candidate-findings">
+        <h4>Logged Discoveries</h4>
+        <div id="candidates-list" class="candidates-list">
+          <p class="empty-state">No candidates logged for this sequence yet. Use the Motion Ruler or click on an object to log one!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Guided Challenge Tour Overlay Modal (Slice 10) -->
+    <div id="tour-modal" class="tour-modal hidden" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+      <div class="tour-card">
+        <div class="tour-header">
+          <span id="tour-step-badge" class="tour-step-badge">Target 1 of 5</span>
+          <h3 id="tour-title">WISE 0855: Sub-stellar Brown Dwarf</h3>
+          <button type="button" id="close-tour-btn" class="btn btn-chip" aria-label="Close Tour">&times;</button>
+        </div>
+        <div class="tour-body">
+          <p id="tour-description">WISE 0855 is the fourth-closest known system to the Sun and the coldest known sub-stellar brown dwarf (-13 &deg;C). It emits almost exclusively in the thermal mid-infrared (D5 &amp; D6, 3.8-5.0 &mu;m) and is completely invisible in optical and near-IR bands!</p>
+          <div class="tour-mission-target">
+            <strong>Key Science:</strong> <span id="tour-target-hint">Switch between D1 and D5/D6 to see the object appear. Use the Motion Ruler to measure its extreme proper motion of 8.1 arcsec/yr.</span>
+          </div>
+        </div>
+        <div class="tour-actions">
+          <button type="button" id="tour-prev-btn" class="btn btn-secondary">Previous</button>
+          <button type="button" id="tour-load-btn" class="btn btn-primary">Load Target</button>
+          <button type="button" id="tour-next-btn" class="btn btn-secondary">Next Target &raquo;</button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <footer id="app-footer" class="app-footer">

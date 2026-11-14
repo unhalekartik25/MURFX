@@ -167,3 +167,26 @@ class SpectrumResult(BaseModel):
     radius_px: int
     n_points: int
     points: list[SpectrumPoint]
+
+
+class CandidateFinding(BaseModel):
+    """Citizen science moving object candidate or transient finding (Slice 10)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(..., min_length=1, max_length=64, description="Candidate or observer label")
+    sequence_key: str = Field(..., description="Sequence hash where candidate was spotted")
+    ra: float = Field(..., ge=0.0, lt=360.0, description="Right Ascension in ICRS degrees")
+    dec: float = Field(..., ge=-90.0, le=90.0, description="Declination in ICRS degrees")
+    classification: Literal[
+        "Planet X Candidate",
+        "Brown Dwarf",
+        "Near-Earth Asteroid",
+        "Variable Star",
+        "Transient / Flare",
+        "Other",
+    ] = Field(default="Planet X Candidate", description="Object classification")
+    motion_rate_arcsec_yr: float = Field(default=0.0, ge=0.0, le=1000.0, description="Estimated proper motion rate")
+    position_angle_deg: float = Field(default=0.0, ge=0.0, le=360.0, description="Motion direction East of North")
+    notes: str = Field(default="", max_length=256, description="Observational notes")
+    created_at: str | None = None

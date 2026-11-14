@@ -829,6 +829,189 @@ body.embed-mode .viewer-card {
   box-shadow: 0 0 6px #f43f5e;
 }
 
+/* Motion Ruler Tool (Slice 10) */
+.ruler-overlay-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.ruler-readout {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #38bdf8;
+  color: #38bdf8;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+/* Guided Challenge Tour (Slice 10) */
+.btn-tour {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: #ffffff;
+  border: none;
+  font-weight: 500;
+  margin-left: auto;
+}
+.btn-tour:hover {
+  background: linear-gradient(135deg, #1d4ed8, #6d28d9);
+}
+
+.tour-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+.tour-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  max-width: 520px;
+  width: 90%;
+  padding: 1.5rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.tour-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.tour-header h3 {
+  font-size: 1.15rem;
+  margin-top: 0.25rem;
+  color: var(--text-main);
+}
+
+.tour-step-badge {
+  display: inline-block;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  margin-bottom: 0.25rem;
+}
+
+.tour-body {
+  margin-bottom: 1.5rem;
+  color: var(--text-main);
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+.tour-mission-target {
+  background: rgba(30, 41, 59, 0.8);
+  border-left: 3px solid #38bdf8;
+  padding: 0.75rem;
+  border-radius: 4px;
+  margin-top: 1rem;
+  font-size: 0.85rem;
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Citizen Science Discovery Candidate Logger (Slice 10) */
+.candidate-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.candidate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.candidate-header h3 {
+  font-size: 1.1rem;
+  color: var(--text-main);
+  margin-bottom: 0.25rem;
+}
+
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.candidate-status {
+  font-size: 0.85rem;
+  margin-left: 1rem;
+  color: #10b981;
+}
+
+.candidate-findings {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+  padding-top: 1rem;
+}
+
+.candidate-findings h4 {
+  font-size: 0.95rem;
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.candidates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.candidate-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.85rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.candidate-item .cand-badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #334155;
+  color: #38bdf8;
+  font-weight: 500;
+}
+
 .app-footer {
   padding: 1.5rem;
   border-top: 1px solid var(--border-color);

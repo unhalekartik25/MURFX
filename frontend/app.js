@@ -153,6 +153,40 @@ const loopBtn = document.getElementById("loop-btn");
 const bounceBtn = document.getElementById("bounce-btn");
 const speedSelect = document.getElementById("speed-select");
 
+// Motion Ruler, Candidate Logger & Guided Tour DOM Elements (Slice 10)
+const toggleRuler = document.getElementById("toggle-ruler");
+const rulerCanvas = document.getElementById("ruler-canvas");
+const rulerCtx = rulerCanvas ? rulerCanvas.getContext("2d") : null;
+const rulerReadout = document.getElementById("ruler-readout");
+
+const openCandidateBtn = document.getElementById("open-candidate-btn");
+const candidateSection = document.getElementById("candidate-section");
+const closeCandidateBtn = document.getElementById("close-candidate-btn");
+const candidateForm = document.getElementById("candidate-form");
+const candName = document.getElementById("cand-name");
+const candClass = document.getElementById("cand-class");
+const candRa = document.getElementById("cand-ra");
+const candDec = document.getElementById("cand-dec");
+const candMotion = document.getElementById("cand-motion");
+const candPa = document.getElementById("cand-pa");
+const candNotes = document.getElementById("cand-notes");
+const candidateStatus = document.getElementById("candidate-status");
+const candidatesList = document.getElementById("candidates-list");
+
+const startTourBtn = document.getElementById("start-tour-btn");
+const tourModal = document.getElementById("tour-modal");
+const closeTourBtn = document.getElementById("close-tour-btn");
+const tourStepBadge = document.getElementById("tour-step-badge");
+const tourTitle = document.getElementById("tour-title");
+const tourDescription = document.getElementById("tour-description");
+const tourTargetHint = document.getElementById("tour-target-hint");
+const tourPrevBtn = document.getElementById("tour-prev-btn");
+const tourNextBtn = document.getElementById("tour-next-btn");
+const tourLoadBtn = document.getElementById("tour-load-btn");
+
+let rulerStart = null;
+let rulerEnd = null;
+
 const detailDate = document.getElementById("detail-date");
 const detailMjd = document.getElementById("detail-mjd");
 const detailWavelength = document.getElementById("detail-wavelength");
@@ -259,6 +293,10 @@ function initEventListeners() {
   canvas.addEventListener("click", handleCanvasClick);
   if (flagsCanvas) flagsCanvas.addEventListener("click", handleCanvasClick);
   if (gaiaCanvas) gaiaCanvas.addEventListener("click", handleCanvasClick);
+  if (rulerCanvas) {
+    rulerCanvas.addEventListener("click", handleCanvasClick);
+    rulerCanvas.addEventListener("mousemove", handleCanvasMouseMove);
+  }
 
   if (spectrumRadiusSelect) {
     spectrumRadiusSelect.addEventListener("change", () => {
@@ -328,6 +366,24 @@ function initEventListeners() {
   }
   if (exportFitsBtn) exportFitsBtn.addEventListener("click", exportFits);
   if (spectrumModeBtn) spectrumModeBtn.addEventListener("click", toggleSpectrumMode);
+
+  // Motion Ruler, Candidate Logger & Guided Tour (Slice 10)
+  if (toggleRuler) {
+    toggleRuler.addEventListener("change", () => {
+      if (!toggleRuler.checked) {
+        clearRuler();
+      }
+    });
+  }
+  if (openCandidateBtn) openCandidateBtn.addEventListener("click", toggleCandidateSection);
+  if (closeCandidateBtn) closeCandidateBtn.addEventListener("click", toggleCandidateSection);
+  if (candidateForm) candidateForm.addEventListener("submit", handleCandidateSubmit);
+
+  if (startTourBtn) startTourBtn.addEventListener("click", openTour);
+  if (closeTourBtn) closeTourBtn.addEventListener("click", closeTour);
+  if (tourNextBtn) tourNextBtn.addEventListener("click", handleTourNext);
+  if (tourPrevBtn) tourPrevBtn.addEventListener("click", handleTourPrev);
+  if (tourLoadBtn) tourLoadBtn.addEventListener("click", loadTourTarget);
 
   // Share & Embed Buttons
   shareLinkBtn.addEventListener("click", copyShareLink);
@@ -636,6 +692,10 @@ async function loadSequenceResult(result) {
       gaiaCanvas.width = result.grid.width;
       gaiaCanvas.height = result.grid.height;
     }
+    if (rulerCanvas) {
+      rulerCanvas.width = result.grid.width;
+      rulerCanvas.height = result.grid.height;
+    }
     updateScaleBar(result.grid.pixscale_arcsec);
     fetchGaiaSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
     if (toggleWise && toggleWise.checked) {
@@ -686,6 +746,8 @@ async function loadSequenceResult(result) {
   frameB = Math.min(1, frames.length - 1);
   updateAbStatus();
   showFrame(0);
+  clearRuler();
+  loadCandidates(currentSequenceKey);
 
   // Check prefers-reduced-motion before autoplay
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -729,6 +791,10 @@ function handleCanvasMouseMove(e) {
   const raHover = centerRa - (dxPx * degPerPx) / (cosDec || 1.0);
 
   hoverCoords.textContent = `RA: ${raHover.toFixed(4)}\u00B0, Dec: ${decHover.toFixed(4)}\u00B0`;
+
+  if (toggleRuler && toggleRuler.checked && rulerStart && !rulerEnd) {
+    drawRulerPreview(px, py);
+  }
 }
 
 function showFrame(index) {
@@ -1234,6 +1300,11 @@ function handleCanvasClick(e) {
   const py = (e.clientY - rect.top) * scaleY;
 
   if (px < 0 || px >= canvas.width || py < 0 || py >= canvas.height) return;
+
+  if (toggleRuler && toggleRuler.checked) {
+    handleRulerClick(px, py, e);
+    return;
+  }
 
   const gridX = Math.round(px);
   const gridY = Math.round(py);
@@ -1769,4 +1840,408 @@ function exportFits() {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+// ============================================================================
+// Slice 10: Motion Ruler, Candidate Discovery Logger & Guided Challenge Tour
+// ============================================================================
+
+function pixelToSky(px, py) {
+  if (!currentResult || !currentResult.grid) {
+    return { ra: parseFloat(raInput.value), dec: parseFloat(decInput.value) };
+  }
+  const w = canvas.width;
+  const h = canvas.height;
+  const cx = w / 2.0;
+  const cy = h / 2.0;
+  const dxPx = px - cx;
+  const dyPx = cy - py;
+  const degPerPx = (currentResult.grid.pixscale_arcsec || 3.08) / 3600.0;
+  const centerRa = parseFloat(raInput.value);
+  const centerDec = parseFloat(decInput.value);
+  const decVal = centerDec + dyPx * degPerPx;
+  const cosDec = Math.cos((centerDec * Math.PI) / 180.0) || 1.0;
+  const raVal = centerRa - (dxPx * degPerPx) / cosDec;
+  return {
+    ra: ((raVal % 360) + 360) % 360,
+    dec: Math.max(-90, Math.min(90, decVal)),
+  };
+}
+
+function clearRuler() {
+  if (rulerCtx && rulerCanvas) {
+    rulerCtx.clearRect(0, 0, rulerCanvas.width, rulerCanvas.height);
+  }
+  if (rulerReadout) {
+    rulerReadout.classList.add("hidden");
+  }
+  rulerStart = null;
+  rulerEnd = null;
+}
+
+function handleRulerClick(px, py, e) {
+  if (!rulerStart || (rulerStart && rulerEnd)) {
+    // Start new ruler measurement
+    rulerStart = { x: px, y: py };
+    rulerEnd = null;
+    if (rulerReadout) rulerReadout.classList.add("hidden");
+    if (rulerCtx && rulerCanvas) {
+      rulerCtx.clearRect(0, 0, rulerCanvas.width, rulerCanvas.height);
+      rulerCtx.beginPath();
+      rulerCtx.arc(px, py, 4, 0, Math.PI * 2);
+      rulerCtx.fillStyle = "#38bdf8";
+      rulerCtx.fill();
+    }
+  } else {
+    // Complete ruler measurement
+    rulerEnd = { x: px, y: py };
+    finalizeRuler(rulerStart, rulerEnd);
+  }
+}
+
+function drawRulerPreview(px, py) {
+  if (!rulerCtx || !rulerCanvas || !rulerStart) return;
+  rulerCtx.clearRect(0, 0, rulerCanvas.width, rulerCanvas.height);
+
+  // Dashed guide line
+  rulerCtx.beginPath();
+  rulerCtx.moveTo(rulerStart.x, rulerStart.y);
+  rulerCtx.lineTo(px, py);
+  rulerCtx.strokeStyle = "rgba(56, 189, 248, 0.7)";
+  rulerCtx.lineWidth = 2;
+  rulerCtx.setLineDash([4, 4]);
+  rulerCtx.stroke();
+  rulerCtx.setLineDash([]);
+
+  // Endpoints
+  rulerCtx.beginPath();
+  rulerCtx.arc(rulerStart.x, rulerStart.y, 4, 0, Math.PI * 2);
+  rulerCtx.arc(px, py, 4, 0, Math.PI * 2);
+  rulerCtx.fillStyle = "#38bdf8";
+  rulerCtx.fill();
+}
+
+function finalizeRuler(p1, p2) {
+  if (!rulerCtx || !rulerCanvas) return;
+  rulerCtx.clearRect(0, 0, rulerCanvas.width, rulerCanvas.height);
+
+  // Draw solid ruler line
+  rulerCtx.beginPath();
+  rulerCtx.moveTo(p1.x, p1.y);
+  rulerCtx.lineTo(p2.x, p2.y);
+  rulerCtx.strokeStyle = "#38bdf8";
+  rulerCtx.lineWidth = 2.5;
+  rulerCtx.shadowColor = "#38bdf8";
+  rulerCtx.shadowBlur = 6;
+  rulerCtx.stroke();
+  rulerCtx.shadowBlur = 0;
+
+  // Circles at endpoints
+  rulerCtx.beginPath();
+  rulerCtx.arc(p1.x, p1.y, 5, 0, Math.PI * 2);
+  rulerCtx.arc(p2.x, p2.y, 5, 0, Math.PI * 2);
+  rulerCtx.fillStyle = "#38bdf8";
+  rulerCtx.fill();
+  rulerCtx.strokeStyle = "#ffffff";
+  rulerCtx.lineWidth = 1.5;
+  rulerCtx.stroke();
+
+  // Compute metrics
+  const sky1 = pixelToSky(p1.x, p1.y);
+  const sky2 = pixelToSky(p2.x, p2.y);
+
+  const cosDec = Math.cos((sky1.dec * Math.PI) / 180.0);
+  const dRaArcsec = (sky2.ra - sky1.ra) * cosDec * 3600.0;
+  const dDecArcsec = (sky2.dec - sky1.dec) * 3600.0;
+  const sepArcsec = Math.sqrt(dRaArcsec * dRaArcsec + dDecArcsec * dDecArcsec);
+
+  let paDeg = (Math.atan2(dRaArcsec, dDecArcsec) * 180.0) / Math.PI;
+  if (paDeg < 0) paDeg += 360.0;
+
+  let deltaDays = 0;
+  if (frames.length >= 2) {
+    const mjdA = frames[frameA]?.mjd ?? frames[0]?.mjd;
+    const mjdB = frames[frameB]?.mjd ?? frames[frames.length - 1]?.mjd;
+    if (mjdA !== undefined && mjdB !== undefined) {
+      deltaDays = Math.abs(mjdB - mjdA);
+    }
+  }
+
+  let motionRate = 0;
+  if (deltaDays > 0.01) {
+    motionRate = sepArcsec / (deltaDays / 365.25);
+  } else {
+    motionRate = sepArcsec;
+  }
+
+  // Position floating readout
+  if (rulerReadout) {
+    const midX = (p1.x + p2.x) / 2.0;
+    const midY = (p1.y + p2.y) / 2.0;
+    rulerReadout.style.left = `${midX + 10}px`;
+    rulerReadout.style.top = `${midY - 20}px`;
+    rulerReadout.textContent = `Sep: ${sepArcsec.toFixed(2)}" \u2022 PA: ${paDeg.toFixed(1)}\u00B0 \u2022 \u03BC: ${motionRate.toFixed(2)}"/yr`;
+    rulerReadout.classList.remove("hidden");
+  }
+
+  // Populate candidate form
+  if (candRa) candRa.value = sky2.ra.toFixed(6);
+  if (candDec) candDec.value = sky2.dec.toFixed(6);
+  if (candMotion) candMotion.value = motionRate.toFixed(2);
+  if (candPa) candPa.value = paDeg.toFixed(1);
+}
+
+// Guided Challenge Tour
+const tourSteps = [
+  {
+    title: "WISE 0855: Sub-stellar Brown Dwarf",
+    description: "WISE 0855 is the fourth-closest known system to the Sun and the coldest known sub-stellar brown dwarf (-13 \u00B0C). It emits almost exclusively in the thermal mid-infrared (D5 & D6, 3.8-5.0 \u03BCm) and is completely invisible in optical and near-IR bands!",
+    hint: "Notice how WISE 0855 is completely absent in D1/D2, but glows prominently in D5 and D6. Use the Motion Ruler to measure its extreme proper motion of 8.1 arcsec/yr.",
+    params: {
+      target: "WISE 0855",
+      ra: 133.795125,
+      dec: -7.245147,
+      fov: 8.0,
+      detector: 5,
+      mode: "frames",
+    },
+  },
+  {
+    title: "Barnard's Star: Speed Demon of the Night Sky",
+    description: "Barnard's Star in Ophiuchus is a red dwarf (M4V) exhibiting the fastest proper motion of any known star across Earth's sky, racing at an incredible 10.3 arcsec per year!",
+    hint: "Use Time-Blink or the Motion Ruler to measure its rapid trajectory across the detector pixels. Check AllWISE 2010 overlay to see its 15-year baseline displacement.",
+    params: {
+      target: "Barnard's Star",
+      ra: 269.452083,
+      dec: 4.693333,
+      fov: 10.0,
+      detector: 2,
+      mode: "frames",
+    },
+  },
+  {
+    title: "Epsilon Indi B: High Proper Motion Binary Brown Dwarf",
+    description: "Epsilon Indi B is a nearby binary brown dwarf system (spectral classes T1 + T6) with extreme proper motion (~4.7 arcsec/yr) located just 12 light-years from Earth.",
+    hint: "Observe its distinct infrared SED signature and rapid motion. Switch to detector D3/D4 to detect methane absorption bands in its cool atmosphere.",
+    params: {
+      target: "Epsilon Indi B",
+      ra: 330.840417,
+      dec: -56.786111,
+      fov: 8.0,
+      detector: 3,
+      mode: "frames",
+    },
+  },
+  {
+    title: "RW Aurigae: Accreting Young Stellar Object",
+    description: "RW Aur is a famous young T Tauri variable star system that undergoes dramatic, months-long dimming events caused by tidal disruption and occulting dust streams.",
+    hint: "Switch to Stack mode or view the Light Curve in the Spectrum panel to observe photometric variability across SPHEREx epochs.",
+    params: {
+      target: "RW Aurigae",
+      ra: 77.10625,
+      dec: 30.401389,
+      fov: 10.0,
+      detector: 4,
+      mode: "frames",
+    },
+  },
+  {
+    title: "R Draconis: Mira Pulsating Giant Star",
+    description: "R Draconis is an asymptotic giant branch (AGB) pulsating variable star with a 245-day period, undergoing massive periodic infrared surface brightness variations.",
+    hint: "Use A/B Difference Imaging (B - A) to see positive/negative residual dipole signatures reflecting its huge pulsation amplitude.",
+    params: {
+      target: "R Draconis",
+      ra: 247.575417,
+      dec: 66.704722,
+      fov: 12.0,
+      detector: 5,
+      mode: "frames",
+    },
+  },
+];
+
+let currentTourStep = 0;
+
+function openTour() {
+  currentTourStep = 0;
+  renderTourStep();
+  if (tourModal) tourModal.classList.remove("hidden");
+}
+
+function closeTour() {
+  if (tourModal) tourModal.classList.add("hidden");
+}
+
+function renderTourStep() {
+  if (currentTourStep < 0) currentTourStep = 0;
+  if (currentTourStep >= tourSteps.length) currentTourStep = tourSteps.length - 1;
+  const step = tourSteps[currentTourStep];
+  if (tourStepBadge) tourStepBadge.textContent = `Target ${currentTourStep + 1} of ${tourSteps.length}`;
+  if (tourTitle) tourTitle.textContent = step.title;
+  if (tourDescription) tourDescription.textContent = step.description;
+  if (tourTargetHint) tourTargetHint.textContent = step.hint;
+  if (tourPrevBtn) tourPrevBtn.disabled = currentTourStep === 0;
+  if (tourNextBtn) {
+    tourNextBtn.textContent = currentTourStep === tourSteps.length - 1 ? "Finish Tour" : "Next Target \u00BB";
+  }
+}
+
+function handleTourNext() {
+  if (currentTourStep < tourSteps.length - 1) {
+    currentTourStep++;
+    renderTourStep();
+  } else {
+    closeTour();
+  }
+}
+
+function handleTourPrev() {
+  if (currentTourStep > 0) {
+    currentTourStep--;
+    renderTourStep();
+  }
+}
+
+function loadTourTarget() {
+  const step = tourSteps[currentTourStep];
+  if (!step) return;
+  targetInput.value = step.params.target;
+  raInput.value = step.params.ra.toFixed(6);
+  decInput.value = step.params.dec.toFixed(6);
+  fovInput.value = step.params.fov.toFixed(1);
+  detectorSelect.value = step.params.detector.toString();
+  modeSelect.value = step.params.mode;
+
+  detChips.forEach((c) => c.classList.toggle("active", c.getAttribute("data-det") === step.params.detector.toString()));
+  closeTour();
+  form.dispatchEvent(new Event("submit", { cancelable: true }));
+}
+
+// Citizen Science Candidate Logger
+function toggleCandidateSection() {
+  if (!candidateSection) return;
+  candidateSection.classList.toggle("hidden");
+  if (!candidateSection.classList.contains("hidden")) {
+    if (!candRa.value) candRa.value = raInput.value;
+    if (!candDec.value) candDec.value = decInput.value;
+    if (currentSequenceKey) loadCandidates(currentSequenceKey);
+  }
+}
+
+async function loadCandidates(seqKey) {
+  if (!candidatesList) return;
+  try {
+    const url = seqKey ? `/api/v1/candidates?sequence_key=${seqKey}` : "/api/v1/candidates";
+    const res = await fetch(url);
+    if (!res.ok) return;
+    const candidates = await res.json();
+
+    while (candidatesList.firstChild) {
+      candidatesList.removeChild(candidatesList.firstChild);
+    }
+
+    if (!Array.isArray(candidates) || candidates.length === 0) {
+      const p = document.createElement("p");
+      p.className = "empty-state";
+      p.textContent = "No candidates logged for this sequence yet. Use the Motion Ruler or click on an object to log one!";
+      candidatesList.appendChild(p);
+      return;
+    }
+
+    candidates.forEach((cand) => {
+      const item = document.createElement("div");
+      item.className = "candidate-item";
+
+      const leftDiv = document.createElement("div");
+      const nameSpan = document.createElement("strong");
+      nameSpan.textContent = cand.name;
+      leftDiv.appendChild(nameSpan);
+
+      const space1 = document.createTextNode(" ");
+      leftDiv.appendChild(space1);
+
+      const badge = document.createElement("span");
+      badge.className = "cand-badge";
+      badge.textContent = cand.classification;
+      leftDiv.appendChild(badge);
+
+      const detailsDiv = document.createElement("div");
+      detailsDiv.style.color = "var(--text-muted)";
+      detailsDiv.style.fontSize = "0.75rem";
+      detailsDiv.style.marginTop = "4px";
+      const motionText = cand.motion_rate_arcsec_yr > 0 ? ` \u2022 \u03BC: ${cand.motion_rate_arcsec_yr}"/yr (${cand.position_angle_deg}\u00B0)` : "";
+      detailsDiv.textContent = `RA: ${cand.ra.toFixed(4)}\u00B0, Dec: ${cand.dec.toFixed(4)}\u00B0${motionText}`;
+      if (cand.notes) {
+        const notesP = document.createElement("div");
+        notesP.style.fontStyle = "italic";
+        notesP.textContent = `"${cand.notes}"`;
+        detailsDiv.appendChild(notesP);
+      }
+      leftDiv.appendChild(detailsDiv);
+
+      item.appendChild(leftDiv);
+
+      const jumpBtn = document.createElement("button");
+      jumpBtn.type = "button";
+      jumpBtn.className = "btn btn-chip";
+      jumpBtn.textContent = "Jump to Coords";
+      jumpBtn.addEventListener("click", () => {
+        raInput.value = cand.ra.toFixed(6);
+        decInput.value = cand.dec.toFixed(6);
+        form.dispatchEvent(new Event("submit", { cancelable: true }));
+      });
+      item.appendChild(jumpBtn);
+
+      candidatesList.appendChild(item);
+    });
+  } catch (err) {
+    console.error("Failed loading candidates", err);
+  }
+}
+
+async function handleCandidateSubmit(e) {
+  e.preventDefault();
+  if (!candName.value || !candRa.value || !candDec.value) return;
+
+  const payload = {
+    name: candName.value.trim(),
+    sequence_key: currentSequenceKey || "manual",
+    ra: parseFloat(candRa.value),
+    dec: parseFloat(candDec.value),
+    classification: candClass.value,
+    motion_rate_arcsec_yr: parseFloat(candMotion.value || "0"),
+    position_angle_deg: parseFloat(candPa.value || "0"),
+    notes: candNotes.value.trim(),
+  };
+
+  const saveBtn = document.getElementById("save-candidate-btn");
+  if (saveBtn) saveBtn.disabled = true;
+  if (candidateStatus) candidateStatus.textContent = "Saving...";
+
+  try {
+    const res = await fetch("/api/v1/candidates", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || "Failed to save candidate finding");
+    }
+
+    if (candidateStatus) {
+      candidateStatus.textContent = "\u2714 Discovery candidate saved!";
+      setTimeout(() => {
+        if (candidateStatus) candidateStatus.textContent = "";
+      }, 4000);
+    }
+    candName.value = "";
+    candNotes.value = "";
+    loadCandidates(currentSequenceKey);
+  } catch (err) {
+    if (candidateStatus) candidateStatus.textContent = `Error: ${err.message}`;
+  } finally {
+    if (saveBtn) saveBtn.disabled = false;
+  }
 }
