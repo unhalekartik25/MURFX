@@ -23,19 +23,19 @@ if (!fs.existsSync(CACHE_DIR)) {
 
 // Preset Targets for SIMBAD Resolver
 const RESOLVE_PRESETS = {
-  "wise 0855": { name: "WISE 0855", ra: 133.795125, dec: -7.245147, pmra: -8120.0, pmdec: 650.0, parallax: 448.0 },
-  "wise0855": { name: "WISE 0855", ra: 133.795125, dec: -7.245147, pmra: -8120.0, pmdec: 650.0, parallax: 448.0 },
-  "barnard's star": { name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pmra: -798.58, pmdec: 10328.24, parallax: 546.98 },
-  "barnard": { name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pmra: -798.58, pmdec: 10328.24, parallax: 546.98 },
-  "epsilon indi b": { name: "eps Ind B", ra: 330.840417, dec: -56.786111, pmra: 3961.4, pmdec: -2538.3, parallax: 275.8 },
-  "eps ind b": { name: "eps Ind B", ra: 330.840417, dec: -56.786111, pmra: 3961.4, pmdec: -2538.3, parallax: 275.8 },
-  "epsind": { name: "eps Ind B", ra: 330.840417, dec: -56.786111, pmra: 3961.4, pmdec: -2538.3, parallax: 275.8 },
-  "rw aurigae": { name: "RW Aur", ra: 77.10625, dec: 30.401389, pmra: 1.25, pmdec: -18.7, parallax: 6.12 },
-  "rw aur": { name: "RW Aur", ra: 77.10625, dec: 30.401389, pmra: 1.25, pmdec: -18.7, parallax: 6.12 },
-  "rwaur": { name: "RW Aur", ra: 77.10625, dec: 30.401389, pmra: 1.25, pmdec: -18.7, parallax: 6.12 },
-  "r draconis": { name: "R Dra", ra: 247.575417, dec: 66.704722, pmra: -8.1, pmdec: 15.4, parallax: 1.85 },
-  "r dra": { name: "R Dra", ra: 247.575417, dec: 66.704722, pmra: -8.1, pmdec: 15.4, parallax: 1.85 },
-  "rdra": { name: "R Dra", ra: 247.575417, dec: 66.704722, pmra: -8.1, pmdec: 15.4, parallax: 1.85 },
+  "wise 0855": { query: "WISE 0855", name: "WISE 0855", ra: 133.795125, dec: -7.245147, pm_ra_mas_yr: -8120.0, pm_dec_mas_yr: 650.0, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "wise0855": { query: "WISE 0855", name: "WISE 0855", ra: 133.795125, dec: -7.245147, pm_ra_mas_yr: -8120.0, pm_dec_mas_yr: 650.0, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "barnard's star": { query: "Barnard's Star", name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pm_ra_mas_yr: -798.58, pm_dec_mas_yr: 10328.24, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "barnard": { query: "Barnard's Star", name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pm_ra_mas_yr: -798.58, pm_dec_mas_yr: 10328.24, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "epsilon indi b": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "eps ind b": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "epsind": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "rw aurigae": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "rw aur": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "rwaur": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "r draconis": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "r dra": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "rdra": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
 };
 
 // Sequences store in-memory for fast dev lookup
@@ -139,6 +139,7 @@ function buildMockSequence(reqData) {
       iso: date,
       wavelength_um: Math.round(wl * 1000) / 1000,
       detector: det,
+      n_exposures: 1,
       n_coadds: 1,
       flagged_fraction: 0.002,
       processing_version: "v1.2",
