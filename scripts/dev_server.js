@@ -23,19 +23,19 @@ if (!fs.existsSync(CACHE_DIR)) {
 
 // Preset Targets for SIMBAD Resolver
 const RESOLVE_PRESETS = {
-  "wise 0855": { query: "WISE 0855", name: "WISE 0855", ra: 133.795125, dec: -7.245147, pm_ra_mas_yr: -8120.0, pm_dec_mas_yr: 650.0, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "wise0855": { query: "WISE 0855", name: "WISE 0855", ra: 133.795125, dec: -7.245147, pm_ra_mas_yr: -8120.0, pm_dec_mas_yr: 650.0, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "barnard's star": { query: "Barnard's Star", name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pm_ra_mas_yr: -798.58, pm_dec_mas_yr: 10328.24, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "barnard": { query: "Barnard's Star", name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pm_ra_mas_yr: -798.58, pm_dec_mas_yr: 10328.24, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "epsilon indi b": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "eps ind b": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "epsind": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "rw aurigae": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "rw aur": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "rwaur": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "r draconis": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "r dra": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
-  "rdra": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2026.0", source: "SIMBAD (offline)" },
+  "wise 0855": { query: "WISE 0855", name: "WISE J085510.83−071442.5", ra: 133.795125, dec: -7.245147, pm_ra_mas_yr: -8100.0, pm_dec_mas_yr: 700.0, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "wise0855": { query: "WISE 0855", name: "WISE J085510.83−071442.5", ra: 133.795125, dec: -7.245147, pm_ra_mas_yr: -8100.0, pm_dec_mas_yr: 700.0, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "barnard's star": { query: "Barnard's Star", name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pm_ra_mas_yr: -798.58, pm_dec_mas_yr: 10328.24, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "barnard": { query: "Barnard's Star", name: "Barnard's Star", ra: 269.452083, dec: 4.693333, pm_ra_mas_yr: -798.58, pm_dec_mas_yr: 10328.24, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "epsilon indi b": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "eps ind b": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "epsind": { query: "eps Ind B", name: "eps Ind B", ra: 330.840417, dec: -56.786111, pm_ra_mas_yr: 3961.4, pm_dec_mas_yr: -2538.3, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "rw aurigae": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "rw aur": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "rwaur": { query: "RW Aur", name: "RW Aur", ra: 77.10625, dec: 30.401389, pm_ra_mas_yr: 1.25, pm_dec_mas_yr: -18.7, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "r draconis": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "r dra": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
+  "rdra": { query: "R Dra", name: "R Dra", ra: 247.575417, dec: 66.704722, pm_ra_mas_yr: -8.1, pm_dec_mas_yr: 15.4, target_epoch: "J2000.0", source: "SIMBAD (offline)", data_status: "simulated" },
 };
 
 // Sequences store in-memory for fast dev lookup
@@ -114,18 +114,19 @@ function buildMockSequence(reqData) {
 
   const key = crypto.createHash("md5").update(`${ra}_${dec}_${det}`).digest("hex");
 
+  // SPHEREx band definitions (exact ranges per detector/array)
   const wavelengthsByDet = {
-    1: [0.75, 1.09],
-    2: [1.10, 1.62],
-    3: [1.63, 2.41],
-    4: [2.42, 3.82],
-    5: [3.83, 4.41],
-    6: [4.42, 5.00],
+    1: [0.75, 1.11],   // D1: 0.75–1.11 µm
+    2: [1.11, 1.64],   // D2: 1.11–1.64 µm
+    3: [1.64, 2.42],   // D3: 1.64–2.42 µm
+    4: [2.42, 3.82],   // D4: 2.42–3.82 µm
+    5: [3.82, 4.42],   // D5: 3.82–4.42 µm
+    6: [4.42, 5.00],   // D6: 4.42–5.00 µm
   };
-  const [wMin, wMax] = wavelengthsByDet[det] || [3.83, 4.41];
+  const [wMin, wMax] = wavelengthsByDet[det] || [3.82, 4.42];
 
   const frames = [];
-  const startMjd = 60800.0;
+  const startMjd = 60700.0; // Early 2025 SPHEREx observations
   for (let i = 0; i < numFrames; i++) {
     const mjd = startMjd + i * 28.5;
     const date = new Date((mjd - 40587) * 86400000).toISOString();
@@ -222,10 +223,12 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(200, { "Content-Type": "application/json" });
     return res.end(
       JSON.stringify({
-        earliest_mjd: 60800.0,
-        latest_mjd: 61142.5,
-        latest_iso: new Date().toISOString(),
-        detectors: [1, 2, 3, 4, 5, 6],
+        latest_observation: "2025-12-19T00:00:00Z",
+        instrument: "SPHEREx",
+        arrays: 6,
+        channels_per_array: 17,
+        total_channels: 102,
+        pixel_scale_arcsec: 6.15,
       })
     );
   }
@@ -307,7 +310,7 @@ const server = http.createServer(async (req, res) => {
         wavelength_um: wl,
         flux_mjy_sr: Math.round((2.5 + Math.sin(i * 0.8) * 1.8) * 100) / 100,
         sigma: 0.12,
-        mjd: 60800.0 + i * 35.0,
+        mjd: 60700.0 + i * 35.0,
         detector: Math.min(6, Math.floor(i / 1.5) + 1),
       });
     });

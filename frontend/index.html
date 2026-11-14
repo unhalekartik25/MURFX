@@ -2,63 +2,100 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MURFX // SPHEREx Wise-Cube &amp; Blink Explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MURFX // SPHEREx Wise-Cube & Blink Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Pinned Aladin Lite v3 Library for Sky Context Integration -->
+  <link rel="stylesheet" href="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.css" />
+  <script defer src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js"></script>
 </head>
-<body class="hud-body">
-  <!-- Top HUD Header Navigation Bar -->
-  <header id="app-header" class="hud-header">
-    <div class="hud-header-left">
-      <div class="brand-badge">
-        <span class="live-pulse"></span>
-        <span class="brand-title">MURFX</span>
-        <span class="brand-sep">//</span>
-        <span class="brand-sub">SPHEREx CUBE</span>
+<body class="cockpit-body">
+
+  <!-- ============================================================== -->
+  <!-- ZONE A: TOP TELEMETRY HEADER BAR (Height: 48px)                -->
+  <!-- ============================================================== -->
+  <header id="app-header" class="cockpit-header">
+    <div class="header-left">
+      <button type="button" id="nav-toggle-btn" class="header-icon-btn" title="Toggle Command Navigation Drawer" aria-label="Toggle Command Drawer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+        </svg>
+      </button>
+
+      <div class="brand-group">
+        <span class="brand-murfx">MURFX</span>
+        <span class="brand-slash">//</span>
+        <h1 class="brand-title">SPHEREx Wise-Cube & Blink Explorer</h1>
       </div>
-      <div id="active-target-badge" class="target-pill-badge">
-        <span class="badge-label">TARGET:</span>
-        <span id="header-target-name" class="badge-val">WISE 0855 (D5)</span>
+
+      <div class="mission-status-pill" title="SPHEREx Instrument Realtime Pipeline Status">
+        <span class="status-indicator-dot"></span>
+        <span class="status-text">ACTIVE</span>
       </div>
     </div>
 
-    <!-- Center Segmented Pill Nav -->
-    <nav class="hud-nav" aria-label="Main Navigation">
-      <div class="nav-segmented-pill">
-        <button type="button" class="nav-tab active" data-tab="setup" id="tab-setup">
-          <span class="tab-num">01</span>
-          <span class="tab-label">MISSION SETUP</span>
-        </button>
-        <button type="button" class="nav-tab" data-tab="studio" id="tab-studio">
-          <span class="tab-num">02</span>
-          <span class="tab-label">BLINK &amp; SPECTRUM</span>
-        </button>
-        <button type="button" class="nav-tab" data-tab="aladin" id="tab-aladin">
-          <span class="tab-num">03</span>
-          <span class="tab-label">ALADIN SKY</span>
-        </button>
-        <button type="button" class="nav-tab" data-tab="lab" id="tab-lab">
-          <span class="tab-num">04</span>
-          <span class="tab-label">CITIZEN LAB</span>
-        </button>
+    <!-- Center Compact Telemetry Tape -->
+    <div class="header-center-telemetry">
+      <div class="telemetry-chip">
+        <span class="chip-label">TARGET:</span>
+        <span id="header-target-name" class="chip-value">WISE 0855 (D5)</span>
       </div>
-    </nav>
+      <div class="telemetry-chip">
+        <span class="chip-label">EPOCH:</span>
+        <span id="chip-epoch" class="chip-value">J2026.0</span>
+      </div>
+      <div class="telemetry-chip">
+        <span class="chip-label">PASSBAND:</span>
+        <span id="chip-passband" class="chip-value">0.75 - 5.00 &mu;m</span>
+      </div>
+    </div>
 
-    <div class="hud-header-right">
-      <button type="button" id="launch-tour-btn" class="btn-neon-pulse" title="Launch Guided Challenge Tour">
-        <span class="neon-icon">&#128640;</span>
-        <span>LAUNCH TOUR</span>
+    <!-- Right Utility Icon Cluster -->
+    <div class="header-right">
+      <button type="button" id="launch-tour-btn" class="btn-cockpit-tour" title="Launch Guided Science Tour">
+        <span class="tour-icon">&#9658;</span>
+        <span>TOUR</span>
       </button>
-      <button type="button" id="open-candidate-btn" class="btn-neon-ghost" title="Open Citizen Science Discovery Logger">
-        <span>&#128221; LOG FINDING</span>
+
+      <button type="button" id="btn-command-palette" class="header-icon-btn" title="Open Setup &amp; SIMBAD Resolver Drawer" aria-label="Target Search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
       </button>
+
+      <button type="button" id="open-candidate-btn" class="header-icon-btn" title="Log Discovery in Citizen Lab" aria-label="Citizen Science Lab">
+        <span class="badge-dot-crimson"></span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 20h9"></path>
+          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+        </svg>
+      </button>
+
+      <button type="button" id="btn-settings" class="header-icon-btn" title="Mission Configuration &amp; Info" aria-label="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+
+      <!-- Target Avatar Thumbnail -->
+      <div class="target-avatar" title="Active Target: WISE 0855">
+        <span class="avatar-letter">W</span>
+      </div>
     </div>
   </header>
 
-  <!-- Progress Bar Overlay (Pinned directly below header) -->
-  <div id="progress-section" class="hud-progress-bar hidden" aria-live="polite">
-    <div class="progress-info">
-      <span id="stage-text">INITIALIZING QUERY...</span>
+  <!-- Query Progress Pipeline Overlay (Pinned below header) -->
+  <div id="progress-section" class="cockpit-progress-strip hidden" aria-live="polite">
+    <div class="progress-info-text">
+      <span id="stage-text">EXTRACTING SPHEREX MEF CUBE...</span>
       <span id="progress-pct">0%</span>
     </div>
     <div class="progress-track">
@@ -66,584 +103,801 @@
     </div>
   </div>
 
-  <!-- Main Viewport Shell: 4 Switchable Sections -->
-  <main class="hud-workspace">
-    <!-- ============================================================== -->
-    <!-- SECTION 1: MISSION SETUP (Target, Detectors, Coordinates, Tuning) -->
-    <!-- ============================================================== -->
-    <section id="view-setup" class="hud-section active-section" aria-labelledby="tab-setup">
-      <div class="bento-grid setup-bento">
-        <!-- Target Search & Resolver Card -->
-        <div class="bento-card card-glow search-card">
-          <div class="card-header">
-            <h3><span class="accent-dot"></span> Target Search &amp; SIMBAD Resolver</h3>
-            <span class="chip-badge">ASTROMETRY</span>
-          </div>
-          <div class="search-box">
-            <div class="input-with-button">
-              <input type="text" id="target-input" placeholder="e.g. WISE 0855, Barnard's Star, or 133.795 -7.245" value="WISE 0855">
-              <button type="button" id="resolve-btn" class="btn btn-secondary">Resolve</button>
-            </div>
-            <div id="resolve-status" class="status-callout">Ready for target input</div>
-          </div>
+  <!-- ============================================================== -->
+  <!-- MAIN COCKPIT GRID (ZONES B, C, D, E)                          -->
+  <!-- ============================================================== -->
+  <div class="cockpit-viewport-shell">
 
-          <div class="quick-picks-block">
-            <div class="block-label">CHALLENGE TARGETS:</div>
-            <div class="quick-pick-chips">
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="wise0855">WISE 0855</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="barnard">Barnard's Star</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="epsind">Epsilon Indi B</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="rwaur">RW Aurigae</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="rdra">R Draconis</button>
-            </div>
+    <!-- ============================================================ -->
+    <!-- ZONE B: FAR-LEFT VERTICAL ICON RAIL (Width: 44px)            -->
+    <!-- ============================================================ -->
+    <nav class="cockpit-icon-rail" aria-label="Cockpit Modes">
+      <div class="rail-top-icons">
+        <button type="button" class="rail-btn active" data-rail-tab="studio" title="01 Studio Workspace &amp; Sky Cockpit" id="rail-btn-studio">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+          </svg>
+        </button>
+        <button type="button" class="rail-btn" data-rail-tab="spectrum" title="02 Multi-Band SED &amp; Sonification Studio" id="rail-btn-spectrum">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+        </button>
+        <button type="button" class="rail-btn" data-rail-tab="detectors" title="03 Detector Array (D1 - D6 Matrix)" id="rail-btn-detectors">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </button>
+        <button type="button" class="rail-btn" data-rail-tab="aladin" title="04 Aladin Lite Sky Context Survey" id="rail-btn-aladin">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </button>
+        <button type="button" class="rail-btn" data-rail-tab="lab" title="05 Citizen Science Candidate Observation Log" id="rail-btn-lab">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="2"></circle>
+            <path d="M16.24 7.76a6 6 0 1 0-8.49 8.49"></path>
+            <path d="M12 2v2"></path>
+            <path d="M12 20v2"></path>
+          </svg>
+        </button>
+      </div>
+
+      <div class="rail-bottom-icons">
+        <button type="button" id="btn-rail-help" class="rail-btn" title="Mission Documentation &amp; Shortcuts">?</button>
+        <button type="button" id="btn-rail-prefs" class="rail-btn" title="Display Preferences">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="4" y1="21" x2="4" y2="14"></line>
+            <line x1="4" y1="10" x2="4" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12" y2="3"></line>
+            <line x1="20" y1="21" x2="20" y2="16"></line>
+            <line x1="20" y1="12" x2="20" y2="3"></line>
+            <circle cx="4" cy="12" r="2"></circle>
+            <circle cx="12" cy="10" r="2"></circle>
+            <circle cx="20" cy="14" r="2"></circle>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ============================================================ -->
+    <!-- ZONE C: LEFT STUDIO WORKSPACE PANEL (Width: 260px)           -->
+    <!-- ============================================================ -->
+    <aside class="cockpit-sidebar" aria-label="Studio Sidebar Controls">
+      <!-- 1. Mode Dropdown Header -->
+      <div class="sidebar-mode-box" id="sidebar-mode-trigger">
+        <div class="mode-title-wrap">
+          <span class="mode-badge-num">01</span>
+          <span class="mode-title-text">STUDIO WORKSPACE</span>
+        </div>
+        <span class="mode-chevron">&#9662;</span>
+      </div>
+
+      <!-- 2. Selected Target Hero Block -->
+      <div class="target-hero-card">
+        <div class="hero-top-row">
+          <span class="hero-label">SELECTED TARGET</span>
+          <button type="button" id="btn-edit-target" class="btn-micro-hero" title="Search or Resolve Object">EDIT</button>
+        </div>
+        <div id="hero-target-name" class="hero-target-heading">WISE 0855</div>
+        <div class="hero-subtext">Cold Sub-stellar Brown Dwarf</div>
+      </div>
+
+      <!-- 3. Glowing Segmented Pill Switch -->
+      <div class="segmented-pill-container">
+        <button type="button" id="pill-active-mode" class="pill-half active">BLINK MODE</button>
+        <button type="button" id="pill-detector-mode" class="pill-half">DETECTORS</button>
+      </div>
+
+      <!-- 4. Astrometry Telemetry Readout Card -->
+      <div class="telemetry-readout-card">
+        <div class="telemetry-card-header">
+          <span class="card-caption">SCI-FI TELEMETRY</span>
+          <span class="crimson-tag">LOCKED</span>
+        </div>
+        <div class="telemetry-grid-4col">
+          <div class="t-cell">
+            <span class="t-lbl">RA</span>
+            <span id="tel-ra" class="t-val">133.79&deg;</span>
+          </div>
+          <div class="t-cell">
+            <span class="t-lbl">DEC</span>
+            <span id="tel-dec" class="t-val">-07.24&deg;</span>
+          </div>
+          <div class="t-cell">
+            <span class="t-lbl">EPOCH</span>
+            <span id="tel-epoch" class="t-val">J2026.0</span>
+          </div>
+          <div class="t-cell">
+            <span class="t-lbl">PM</span>
+            <span id="tel-pm" class="t-val">8130 mas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Camera / Pipeline Control Bar -->
+      <div class="camera-control-bar">
+        <div class="channel-indicator">
+          <span class="chan-dot"></span>
+          <span id="chan-label" class="chan-name">D5: 3.82 - 4.42 &mu;m</span>
+        </div>
+        <div class="scan-status-pill">
+          <span>SCAN ON</span>
+        </div>
+      </div>
+
+      <!-- 6. Segmented Orange Filter Bar -->
+      <div class="orange-filter-bar">
+        <button type="button" class="filter-tab active" id="tab-overlays">OVERLAYS</button>
+        <button type="button" class="filter-tab" id="tab-tools">TOOLS</button>
+      </div>
+
+      <!-- 7. 4 Kinetic Toggle Switch Rows -->
+      <div class="kinetic-toggles-box">
+        <!-- Row 1: Crosshair / Reticle -->
+        <div class="kinetic-row">
+          <span class="k-label">CROSSHAIR / RETICLE</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-crosshair" checked>
+            <span class="toggle-slider gold-slider"></span>
+          </label>
+        </div>
+
+        <!-- Row 2: Proper Motion / Gaia & WISE -->
+        <div class="kinetic-row">
+          <span class="k-label">PM VECTOR / GAIA &amp; WISE</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-gaia" checked>
+            <span class="toggle-slider amber-trail-slider"></span>
+          </label>
+        </div>
+
+        <!-- Row 3: Invert / Contrast Smooth -->
+        <div class="kinetic-row">
+          <span class="k-label">INVERT CONTRAST</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-invert">
+            <span class="toggle-slider dark-slider"></span>
+          </label>
+        </div>
+
+        <!-- Row 4: Target Markers / NEOSSat -->
+        <div class="kinetic-row">
+          <span class="k-label">TARGET MARKERS / NEOSSAT</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-neossat">
+            <span class="toggle-slider crimson-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Mini Sparkline in Left Dock -->
+      <div class="sidebar-sparkline-box">
+        <div class="sparkline-header">
+          <span>CENTRAL FLUX TREND</span>
+          <span id="sparkline-val" class="sparkline-val">--</span>
+        </div>
+        <canvas id="sparkline-canvas" width="236" height="50"></canvas>
+      </div>
+
+      <!-- 8. Target Quick-Pick List (Bottom of Left Panel) -->
+      <div class="quick-picks-container">
+        <div class="quick-picks-header">
+          <div class="qp-title">
+            <span class="crimson-dot"></span>
+            <span>CHALLENGE TARGETS</span>
+          </div>
+          <span class="qp-count">5</span>
+        </div>
+
+        <div class="quick-targets-list">
+          <button type="button" class="target-row active quick-pick-chip" data-target="wise0855">
+            <span class="target-name">&gt; WISE 0855</span>
+            <span class="target-badge">D5 &bull; 4.1&mu;m</span>
+          </button>
+          <button type="button" class="target-row quick-pick-chip" data-target="barnard">
+            <span class="target-name">&gt; Barnard's Star</span>
+            <span class="target-badge">D2 &bull; 1.4&mu;m</span>
+          </button>
+          <button type="button" class="target-row quick-pick-chip" data-target="epsind">
+            <span class="target-name">&gt; Epsilon Indi B</span>
+            <span class="target-badge">D3 &bull; 2.0&mu;m</span>
+          </button>
+          <button type="button" class="target-row quick-pick-chip" data-target="rwaur">
+            <span class="target-name">&gt; RW Aurigae</span>
+            <span class="target-badge">D4 &bull; 3.1&mu;m</span>
+          </button>
+          <button type="button" class="target-row quick-pick-chip" data-target="rdra">
+            <span class="target-name">&gt; R Draconis</span>
+            <span class="target-badge">D5 &bull; 4.1&mu;m</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================================ -->
+    <!-- ZONE D: CENTER STAGE: MAIN SKY VIEWPORT + FLOATING HUD        -->
+    <!-- ============================================================ -->
+    <main class="cockpit-center-stage">
+      <!-- 1. Interactive Sky Canvas Container (Top 82% of Center Column) -->
+      <div class="sky-viewport-container" id="canvas-container" tabindex="0" title="Pan: Drag | Zoom: Wheel, +, - | Shortcuts: Space, Arrows">
+
+        <!-- Full-Bleed Stacked Astronomical Canvas Viewport -->
+        <div id="canvas-viewport" class="canvas-viewport-matrix">
+          <canvas id="blink-canvas" width="512" height="512"></canvas>
+          <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="512" height="512"></canvas>
+          <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="512" height="512"></canvas>
+          <canvas id="ruler-canvas" class="ruler-overlay-canvas" width="512" height="512"></canvas>
+
+          <!-- Interactive Pins -->
+          <div id="spectrum-pin" class="spectrum-pin-marker hidden"></div>
+          <div id="centroid-pin" class="centroid-pin-marker hidden"></div>
+        </div>
+
+        <!-- Top-Left Corner Telemetry Overlay -->
+        <div class="corner-overlay top-left">
+          <div class="corner-box-title">QUICK DOCK</div>
+          <div class="corner-telemetry-item">RA: <span id="overlay-ra">133.795125&deg;</span></div>
+          <div class="corner-telemetry-item">DEC: <span id="overlay-dec">-07.245147&deg;</span></div>
+          <div class="corner-bar-wrap">
+            <div class="corner-bar-fill" style="width: 78%;"></div>
+          </div>
+          <div class="corner-lock-status">STATUS: <span class="gold-text">LOCKED</span></div>
+        </div>
+
+        <!-- Top-Right Corner Telemetry Overlay -->
+        <div class="corner-overlay top-right">
+          <div class="corner-meta-pill">DET: <strong id="detail-detector">D5</strong></div>
+          <div class="corner-meta-pill">MJD: <strong id="detail-mjd">60985.00</strong></div>
+          <div class="corner-meta-pill">FOV: <strong id="detail-fov">8.0'</strong></div>
+          <div class="corner-meta-pill">&lambda;: <strong id="detail-wavelength">4.12 &mu;m</strong></div>
+        </div>
+
+        <!-- Top-Center Floating Trapezoid/Chamfered HUD Toolbar -->
+        <div class="floating-hud-toolbar">
+          <div class="hud-edge-ledge top"></div>
+          <div class="hud-buttons-cluster">
+            <button type="button" id="hud-btn-select" class="hud-icon-btn active" title="Select / Inspect Pixel">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"></path>
+              </svg>
+            </button>
+            <button type="button" id="hud-btn-pan" class="hud-icon-btn" title="Pan / Navigate Canvas">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="5 9 2 12 5 15"></polyline>
+                <polyline points="9 5 12 2 15 5"></polyline>
+                <polyline points="15 19 12 22 9 19"></polyline>
+                <polyline points="19 9 22 12 19 15"></polyline>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <line x1="12" y1="2" x2="12" y2="22"></line>
+              </svg>
+            </button>
+            <button type="button" id="hud-btn-stretch" class="hud-icon-btn" title="Toggle Asinh / Linear Dynamic Stretch">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="9"></circle>
+                <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"></path>
+              </svg>
+            </button>
+            <button type="button" id="hud-btn-centroid" class="hud-icon-btn" title="Sub-Pixel Centroid Inspector">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="7"></circle>
+                <circle cx="12" cy="12" r="1" fill="currentColor"></circle>
+              </svg>
+            </button>
+            <div class="hud-divider"></div>
+            <button type="button" id="set-frame-a-btn" class="hud-pill-btn" title="Set Current Frame as Frame A">SET A</button>
+            <button type="button" id="set-frame-b-btn" class="hud-pill-btn" title="Set Current Frame as Frame B">SET B</button>
+            <button type="button" id="blink-ab-btn" class="hud-pill-btn" title="Blink Between Frame A and Frame B">BLINK A/B</button>
+            <button type="button" id="diff-ab-btn" class="hud-pill-btn" title="Compute Difference Image (B - A)">DIFF (B-A)</button>
+            <div class="hud-divider"></div>
+            <button type="button" id="zoom-in-btn" class="hud-icon-btn" title="Zoom In (+)">+</button>
+            <button type="button" id="zoom-out-btn" class="hud-icon-btn" title="Zoom Out (-)">-</button>
+            <button type="button" id="zoom-reset-btn" class="hud-pill-btn" title="Reset Zoom (Z / 0)">1.0x</button>
+          </div>
+          <div class="hud-edge-ledge bottom"></div>
+        </div>
+
+        <!-- Center Concentric Radar Reticle & HUD Overlay Elements -->
+        <div class="center-radar-reticle-overlay" id="radar-reticle">
+          <div class="outer-graduated-compass-ring"></div>
+          <div class="middle-dashed-rotating-ring"></div>
+          <div class="inner-crosshair-reticle">
+            <span class="reticle-tick top"></span>
+            <span class="reticle-tick bottom"></span>
+            <span class="reticle-tick left"></span>
+            <span class="reticle-tick right"></span>
+            <span class="reticle-vector-arrow top-left">&#8598;</span>
+            <span class="reticle-vector-arrow top-right">&#8599;</span>
+            <span class="reticle-vector-arrow bottom-left">&#8601;</span>
+            <span class="reticle-vector-arrow bottom-right">&#8600;</span>
+            <div class="reticle-floating-label">PM VECTOR LOCK</div>
           </div>
         </div>
 
-        <!-- Detector Array Matrix Card (D1 - D6) -->
-        <div class="bento-card detector-matrix-card">
-          <div class="card-header">
-            <h3><span class="accent-dot magenta"></span> SPHEREx Detector Array</h3>
-            <span class="chip-badge">6 CHANNELS</span>
-          </div>
-          <p class="card-desc">Select wavelength bandpass (0.75 &mu;m &ndash; 5.00 &mu;m linear variable filters):</p>
-          <div class="detector-grid">
-            <button type="button" class="det-tile det-chip" data-det="1">
-              <span class="det-id">D1</span>
-              <span class="det-range">0.75 - 1.09 &mu;m</span>
-              <span class="det-desc">Near-IR / Optical</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="2">
-              <span class="det-id">D2</span>
-              <span class="det-range">1.10 - 1.62 &mu;m</span>
-              <span class="det-desc">J-Band Stellar</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="3">
-              <span class="det-id">D3</span>
-              <span class="det-range">1.63 - 2.41 &mu;m</span>
-              <span class="det-desc">H &amp; K Ices</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="4">
-              <span class="det-id">D4</span>
-              <span class="det-range">2.42 - 3.82 &mu;m</span>
-              <span class="det-desc">Water Ice Absorption</span>
-            </button>
-            <button type="button" class="det-tile det-chip active" data-det="5">
-              <span class="det-id">D5</span>
-              <span class="det-range">3.83 - 4.41 &mu;m</span>
-              <span class="det-desc">Thermal Brown Dwarfs</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="6">
-              <span class="det-id">D6</span>
-              <span class="det-range">4.42 - 5.00 &mu;m</span>
-              <span class="det-desc">Deep Mid-Infrared</span>
-            </button>
+        <!-- Left & Right Vertical HUD Pitch Ladders -->
+        <div class="hud-pitch-ladder left-ladder">
+          <span class="pitch-mark">492.2</span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-mark">300.0</span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-mark">100.0</span>
+        </div>
+
+        <div class="hud-pitch-ladder right-ladder">
+          <span class="pitch-mark">59.06</span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-mark">30.00</span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-tick"></span>
+          <span class="pitch-mark">0.00</span>
+        </div>
+
+        <!-- Bottom-Left Compact Telemetry Matrix (5x4 UI Data Grid) -->
+        <div class="bottom-left-matrix-card">
+          <div class="matrix-title">PIXEL TELEMETRY MATRIX</div>
+          <div class="matrix-grid">
+            <div class="m-cell m-head">RA</div>
+            <div class="m-cell m-head">DEC</div>
+            <div class="m-cell m-head">MJD</div>
+            <div class="m-cell m-head">FLUX</div>
+            <div class="m-cell">133.795</div>
+            <div class="m-cell">-07.245</div>
+            <div class="m-cell">60985.0</div>
+            <div class="m-cell">59.99</div>
+            <div class="m-cell">133.798</div>
+            <div class="m-cell">-07.243</div>
+            <div class="m-cell">61013.5</div>
+            <div class="m-cell">61.20</div>
+            <div class="m-cell">133.801</div>
+            <div class="m-cell">-07.241</div>
+            <div class="m-cell">61042.0</div>
+            <div class="m-cell">58.85</div>
           </div>
         </div>
 
-        <!-- Pipeline Form Parameters Card -->
-        <div class="bento-card setup-form-card">
-          <div class="card-header">
-            <h3><span class="accent-dot cyan"></span> Coordinates &amp; Field of View</h3>
-            <span class="chip-badge">GRID CONFIG</span>
+        <!-- Bottom-Right Picture-in-Picture (PiP) Aladin Sky Mini-Map -->
+        <div class="bottom-right-pip-aladin" id="pip-aladin-container" title="Click to Expand Full Sky Context">
+          <div class="pip-header">
+            <span>ALADIN LITE SKY CONTEXT</span>
+            <button type="button" id="btn-expand-aladin" class="btn-micro-pip">&#x2922;</button>
           </div>
-          <form id="sequence-form" class="hud-form">
-            <div class="form-row">
-              <div class="form-field">
-                <label for="ra-input">Right Ascension (deg)</label>
-                <input type="number" id="ra-input" name="ra" step="0.000001" min="0" max="359.999999" value="133.795125" required>
-              </div>
-              <div class="form-field">
-                <label for="dec-input">Declination (deg)</label>
-                <input type="number" id="dec-input" name="dec" step="0.000001" min="-90" max="90" value="-7.245147" required>
-              </div>
-              <div class="form-field">
-                <label for="fov-input">Field of View (arcmin)</label>
-                <input type="number" id="fov-input" name="fov" step="0.5" min="1" max="30" value="8.0" required>
-              </div>
-              <div class="form-field">
-                <label for="mode-select">Sequence Mode</label>
-                <select id="mode-select" name="mode">
-                  <option value="frames" selected>Time Blink (Each Exposure)</option>
-                  <option value="stack">Stacked (Time Bins Co-Add)</option>
-                </select>
-              </div>
-            </div>
+          <div id="aladin-lite-div" class="pip-aladin-view"></div>
+        </div>
 
-            <!-- Hidden native select linked with det-chips -->
-            <select id="detector-select" name="detector" class="hidden">
-              <option value="1">D1</option>
-              <option value="2">D2</option>
-              <option value="3">D3</option>
-              <option value="4">D4</option>
-              <option value="5" selected>D5</option>
-              <option value="6">D6</option>
+        <!-- Scale Bar & Compass Indicators -->
+        <div id="compass-layer" class="compass-hud-overlay">
+          <span class="compass-n">N &uarr;</span>
+          <span class="compass-e">&larr; E</span>
+        </div>
+        <div id="scale-layer" class="scale-hud-overlay">
+          <div id="scale-bar-line" class="scale-bar-line"></div>
+          <span id="scale-bar-text" class="scale-bar-text">1'</span>
+        </div>
+        <div id="ruler-readout" class="ruler-readout hidden"></div>
+        <div id="centroid-readout" class="centroid-readout hidden"></div>
+
+        <!-- Floating Live Coordinate Pill -->
+        <div class="hover-coords-badge">
+          <span id="hover-coords">RA: 133.795125&deg;, Dec: -07.245147&deg;</span>
+        </div>
+      </div>
+
+      <!-- 2. Bottom Wavelength Scrubber & Transport Bar (Height: 86px) -->
+      <footer class="cockpit-transport-bar">
+        <div class="scrubber-header-row">
+          <span class="scrubber-label">WAVELENGTH SCRUBBER TIMELINE BAR</span>
+          <span id="frame-counter" class="scrubber-counter">FRAME 11 / 12 &bull; 4.12 &mu;m</span>
+        </div>
+
+        <!-- Glowing Thermal Gradient Slider Track -->
+        <div class="thermal-slider-track-wrap">
+          <div class="thermal-tick-scale">
+            <span>0.75&mu;m</span>
+            <span>1.11</span>
+            <span>1.64</span>
+            <span>2.42</span>
+            <span>3.82</span>
+            <span>4.42</span>
+            <span>5.00&mu;m</span>
+          </div>
+          <input type="range" id="frame-slider" min="0" max="11" value="10" class="thermal-range-slider" aria-label="Wavelength &amp; Frame Scrubber">
+        </div>
+
+        <!-- Centered Circular Transport Controls -->
+        <div class="transport-controls-cluster">
+          <button type="button" id="step-prev-btn" class="transport-circle-btn step-btn" title="Previous Frame (Left Arrow)">
+            <span>&#9664;&#9664;</span>
+          </button>
+          <button type="button" id="play-pause-btn" class="transport-circle-btn play-btn" title="Play / Pause Blink Animation (Space)">
+            <span id="play-btn-icon">&#9658;</span>
+          </button>
+          <button type="button" id="step-next-btn" class="transport-circle-btn step-btn" title="Next Frame (Right Arrow)">
+            <span>&#9654;&#9654;</span>
+          </button>
+
+          <div class="transport-pills-row">
+            <button type="button" id="loop-btn" class="btn-micro-pill active" title="Toggle Infinite Loop (L)">LOOP</button>
+            <button type="button" id="bounce-btn" class="btn-micro-pill" title="Toggle Ping-Pong Bounce">BOUNCE</button>
+            <label for="speed-select" class="fps-label-inline">FPS:
+              <select id="speed-select" class="cockpit-select-micro">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="4" selected>4</option>
+                <option value="8">8</option>
+                <option value="12">12</option>
+              </select>
+            </label>
+            <button type="button" id="export-gif-btn" class="btn-micro-pill" title="Export Animated GIF">GIF</button>
+            <button type="button" id="export-fits-btn" class="btn-micro-pill" title="Export Scientific FITS">FITS</button>
+          </div>
+        </div>
+      </footer>
+    </main>
+
+    <!-- ============================================================ -->
+    <!-- ZONE E: RIGHT DOCK: SPECTRUM & LIGHT CURVE (Width: 320px)    -->
+    <!-- ============================================================ -->
+    <aside class="cockpit-dock-right" aria-label="Spectrum &amp; Sonification Dock">
+      <!-- 1. Header -->
+      <div class="dock-right-header">
+        <h3 class="dock-title">SPECTRUM &amp; LIGHT CURVE</h3>
+        <button type="button" id="spectrum-mode-btn" class="btn-dock-mode" title="Toggle Spectral Energy Distribution vs Light Curve">VIEW: SED</button>
+      </div>
+
+      <!-- 2. 2x2 Telemetry Sub-Header -->
+      <div class="spectrum-sub-telemetry">
+        <div class="sub-tel-item">
+          <span class="sub-lbl">BAND:</span>
+          <span class="sub-val gold">0.75-5.0 &mu;m</span>
+        </div>
+        <div class="sub-tel-item text-right">
+          <span class="sub-lbl">PEAK FLUX:</span>
+          <span id="tel-peak-flux" class="sub-val crimson">59.99 &mu;Jy</span>
+        </div>
+        <div class="sub-tel-item">
+          <span class="sub-lbl">RANGE:</span>
+          <span class="sub-val gold">~0.1550 &mu;m</span>
+        </div>
+        <div class="sub-tel-item text-right">
+          <span class="sub-lbl">RESIDUAL:</span>
+          <span id="tel-residual" class="sub-val crimson">-0.03</span>
+        </div>
+      </div>
+
+      <!-- 3. Full-Height Vertical Grid SED Chart -->
+      <div class="spectrum-chart-container">
+        <!-- Legend Box -->
+        <div class="chart-legend-box">
+          <span class="legend-line">&mdash; Thermal curve</span>
+          <span class="legend-dots">&bull; SPHEREx LVF</span>
+        </div>
+
+        <!-- SED Curve Canvas -->
+        <canvas id="spectrum-canvas" width="296" height="380"></canvas>
+        <div id="spectrum-playhead" class="spectrum-playhead hidden"></div>
+      </div>
+
+      <!-- Coordinate / Aperture Settings -->
+      <div class="spectrum-dock-options">
+        <div class="opt-col">
+          <span class="opt-label">APERTURE:</span>
+          <select id="spectrum-radius-select" class="cockpit-select-micro">
+            <option value="1" selected>1 px</option>
+            <option value="2">3x3 px</option>
+            <option value="3">5x5 px</option>
+          </select>
+        </div>
+        <div class="opt-col text-right">
+          <button type="button" id="export-spectrum-csv-btn" class="btn-micro-pill">EXPORT CSV</button>
+        </div>
+      </div>
+
+      <!-- 4. Bottom Full-Width Specular PLAY AUDIO Button -->
+      <div class="audio-sonification-dock-action">
+        <button type="button" id="play-audio-btn" class="btn-premium-audio" title="Play Infrared Wavelength Sonification via Web Audio API">
+          <span class="audio-btn-icon">&#9658;</span>
+          <span class="audio-btn-text">PLAY AUDIO SPECTRUM</span>
+        </button>
+        <button type="button" id="stop-audio-btn" class="btn-premium-audio stop hidden" title="Stop Audio Playback">
+          <span class="audio-btn-icon">&#9632;</span>
+          <span class="audio-btn-text">STOP AUDIO</span>
+        </button>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- SLIDE-OVER DRAWER: MISSION SETUP & SIMBAD RESOLVER             -->
+  <!-- ============================================================== -->
+  <div id="drawer-setup" class="cockpit-slide-drawer hidden" role="dialog" aria-labelledby="drawer-setup-title">
+    <div class="drawer-header">
+      <h3 id="drawer-setup-title">MISSION SETUP &amp; ASTROMETRY</h3>
+      <button type="button" id="close-drawer-setup" class="drawer-close-btn">&times;</button>
+    </div>
+    <div class="drawer-content">
+      <!-- Target Search Card -->
+      <div class="drawer-card">
+        <label for="target-input" class="drawer-label">SIMBAD Target Resolver</label>
+        <div class="input-with-button">
+          <input type="text" id="target-input" value="WISE 0855" placeholder="e.g. WISE 0855, Barnard's Star, or 133.795 -7.245">
+          <button type="button" id="resolve-btn" class="btn-primary-action">Resolve</button>
+        </div>
+        <div id="resolve-status" class="status-callout-text">Ready for SIMBAD resolution</div>
+      </div>
+
+      <!-- Sequence Form Parameters -->
+      <form id="sequence-form" class="drawer-form">
+        <div class="drawer-row-2col">
+          <div class="form-group">
+            <label for="ra-input" class="drawer-label">RA (deg, ICRS)</label>
+            <input type="number" id="ra-input" name="ra" step="0.000001" min="0" max="359.999999" value="133.795125" required>
+          </div>
+          <div class="form-group">
+            <label for="dec-input" class="drawer-label">Dec (deg, ICRS)</label>
+            <input type="number" id="dec-input" name="dec" step="0.000001" min="-90" max="90" value="-7.245147" required>
+          </div>
+        </div>
+
+        <div class="drawer-row-2col">
+          <div class="form-group">
+            <label for="fov-input" class="drawer-label">Field of View (arcmin)</label>
+            <input type="number" id="fov-input" name="fov" step="0.5" min="1" max="30" value="8.0" required>
+          </div>
+          <div class="form-group">
+            <label for="mode-select" class="drawer-label">Sequence Mode</label>
+            <select id="mode-select" name="mode">
+              <option value="frames" selected>Time Blink (Each Exposure)</option>
+              <option value="stack">Stacked (Time Bins Co-Add)</option>
             </select>
-
-            <!-- Advanced Accordion Settings -->
-            <details class="advanced-accordion">
-              <summary>Advanced Pipeline Options (Background, Masking, Stretch, Bins)</summary>
-              <div class="advanced-inner">
-                <div class="form-field">
-                  <label for="bg-select">Background Subtraction</label>
-                  <select id="bg-select" name="background">
-                    <option value="median" selected>Median (recommended)</option>
-                    <option value="zodi">Zodiacal Model + Median</option>
-                    <option value="none">None</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="mask-select">Masking Level</label>
-                  <select id="mask-select" name="mask_level">
-                    <option value="minimal" selected>Minimal (unusable only)</option>
-                    <option value="strict">Strict (artifacts/outliers)</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="stretch-select">Stretch Scale</label>
-                  <select id="stretch-select" name="stretch">
-                    <option value="global" selected>Global Dynamic</option>
-                    <option value="frame">Per-Frame Scaled</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="bin-input">Stack Window (Days)</label>
-                  <input type="number" id="bin-input" name="bin_days" min="1" max="180" value="30">
-                </div>
-                <div class="form-field">
-                  <label for="max-frames-input">Max Exposures</label>
-                  <input type="number" id="max-frames-input" name="max_frames" min="2" max="150" value="60">
-                </div>
-              </div>
-            </details>
-
-            <div class="form-actions-bar">
-              <button type="submit" id="submit-btn" class="btn btn-primary-gradient">
-                <span>&#10024; SHOW SKY IN STUDIO</span>
-              </button>
-              <button type="button" id="share-link-btn" class="btn btn-glass">Copy Share Link</button>
-              <button type="button" id="embed-snippet-btn" class="btn btn-glass">Embed</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- SECTION 2: BLINK & SPECTRUM STUDIO (Main 3-Column Bento Studio) -->
-    <!-- ============================================================== -->
-    <section id="view-studio" class="hud-section" aria-labelledby="tab-studio">
-      <div class="studio-bento">
-        <!-- Column 1: Quick Dock & Metadata Summary -->
-        <div class="studio-dock-card">
-          <div class="dock-header">
-            <h4>QUICK DOCK</h4>
-            <span class="dock-status-dot"></span>
-          </div>
-          <div class="dock-presets">
-            <button type="button" class="btn-dock quick-pick-chip" data-target="wise0855">WISE 0855</button>
-            <button type="button" class="btn-dock quick-pick-chip" data-target="barnard">Barnard's Star</button>
-            <button type="button" class="btn-dock quick-pick-chip" data-target="epsind">Eps Indi B</button>
-            <button type="button" class="btn-dock quick-pick-chip" data-target="rwaur">RW Aurigae</button>
-            <button type="button" class="btn-dock quick-pick-chip" data-target="rdra">R Draconis</button>
-          </div>
-
-          <div class="dock-det-strip">
-            <span class="dock-label">CHANNEL:</span>
-            <div class="dock-det-buttons">
-              <button type="button" class="btn-micro det-chip" data-det="1">D1</button>
-              <button type="button" class="btn-micro det-chip" data-det="2">D2</button>
-              <button type="button" class="btn-micro det-chip" data-det="3">D3</button>
-              <button type="button" class="btn-micro det-chip" data-det="4">D4</button>
-              <button type="button" class="btn-micro det-chip active" data-det="5">D5</button>
-              <button type="button" class="btn-micro det-chip" data-det="6">D6</button>
-            </div>
-          </div>
-
-          <div class="frame-meta-panel">
-            <div class="meta-row"><span>EPOCH MJD:</span> <strong id="detail-mjd">--</strong></div>
-            <div class="meta-row"><span>DATE:</span> <strong id="detail-date">--</strong></div>
-            <div class="meta-row"><span>WAVELENGTH:</span> <strong id="detail-wavelength">--</strong></div>
-            <div class="meta-row"><span>DETECTOR:</span> <strong id="detail-detector">D5</strong></div>
-            <div class="meta-row"><span>FLAGGED:</span> <strong id="detail-flagged">0.0%</strong></div>
-          </div>
-
-          <!-- Sparkline Mini Preview in Dock -->
-          <div id="sparkline-section" class="sparkline-mini-card">
-            <div class="sparkline-title">CENTRAL FLUX TREND</div>
-            <canvas id="sparkline-canvas" width="220" height="70"></canvas>
           </div>
         </div>
 
-        <!-- Column 2: Sky Canvas Player, iOS Toggles & Playback Deck -->
-        <div class="studio-center-card">
-          <!-- Top Overlay Sliding Pill Switches -->
-          <div class="studio-toggles-bar">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-crosshair" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Crosshair</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-compass" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Compass</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-scale" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Scale</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-gaia" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Gaia</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-wise" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">WISE</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-neossat">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">NEOSSat</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-ruler">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Ruler</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-centroid">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Centroid</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-invert">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Invert</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-smooth">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Smooth</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-flags">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Flags</span>
-            </label>
-
-            <!-- Zoom Buttons -->
-            <div class="zoom-controls-strip">
-              <button type="button" id="zoom-in-btn" class="btn-micro" title="Zoom In (+)">+</button>
-              <button type="button" id="zoom-out-btn" class="btn-micro" title="Zoom Out (-)">-</button>
-              <button type="button" id="zoom-reset-btn" class="btn-micro" title="Reset Zoom (Z / 0)">1.0x</button>
-            </div>
+        <!-- 6 Detector Array Chips -->
+        <div class="form-group">
+          <label class="drawer-label">Detector Array (Bands D1 - D6)</label>
+          <div class="det-chips-grid">
+            <button type="button" class="det-chip" data-det="1">D1 (0.75-1.11&mu;m)</button>
+            <button type="button" class="det-chip" data-det="2">D2 (1.11-1.64&mu;m)</button>
+            <button type="button" class="det-chip" data-det="3">D3 (1.64-2.42&mu;m)</button>
+            <button type="button" class="det-chip" data-det="4">D4 (2.42-3.82&mu;m)</button>
+            <button type="button" class="det-chip active" data-det="5">D5 (3.82-4.42&mu;m)</button>
+            <button type="button" class="det-chip" data-det="6">D6 (4.42-5.00&mu;m)</button>
           </div>
-
-          <!-- Main Canvas Stack (Fixed Aspect Container) -->
-          <div class="canvas-wrapper" id="canvas-container" tabindex="0" title="Click or use keyboard shortcuts (Space, Left/Right, [, ], L, Z)">
-            <div id="canvas-viewport" class="canvas-viewport">
-              <canvas id="blink-canvas" width="400" height="400"></canvas>
-              <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
-              <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="400" height="400"></canvas>
-              <canvas id="ruler-canvas" class="ruler-overlay-canvas" width="400" height="400"></canvas>
-              
-              <!-- Centroid & Spectrum Pins -->
-              <div id="spectrum-pin" class="spectrum-pin-marker hidden"></div>
-              <div id="centroid-pin" class="centroid-pin-marker hidden"></div>
-            </div>
-
-            <!-- Fixed Non-scaling HUD Layers -->
-            <div id="crosshair-layer" class="crosshair-overlay"></div>
-            <div id="compass-layer" class="compass-overlay">
-              <span class="compass-n">N &uarr;</span>
-              <span class="compass-e">&larr; E</span>
-            </div>
-            <div id="scale-layer" class="scale-overlay">
-              <div id="scale-bar-line" class="scale-bar-line"></div>
-              <span id="scale-bar-text" class="scale-bar-text">1'</span>
-            </div>
-            <div id="ruler-readout" class="ruler-readout hidden"></div>
-            <div id="centroid-readout" class="centroid-readout hidden"></div>
-
-            <div id="canvas-overlay" class="canvas-overlay">
-              <span id="meta-mjd">MJD: --</span>
-              <span id="meta-date">Date: --</span>
-              <span id="meta-wavelength">&lambda;: -- &mu;m</span>
-              <span id="hover-coords" class="hover-coords-pill">RA: --, Dec: --</span>
-            </div>
-          </div>
-
-          <!-- Playback Deck & Scrub Bar -->
-          <div class="playback-deck">
-            <div class="playback-buttons">
-              <button type="button" id="play-pause-btn" class="btn-deck-icon" title="Play / Pause (Space)" disabled>&gt;</button>
-              <button type="button" id="step-prev-btn" class="btn-deck-icon" title="Step Back (Left Arrow)" disabled>&laquo;</button>
-              <button type="button" id="step-next-btn" class="btn-deck-icon" title="Step Forward (Right Arrow)" disabled>&raquo;</button>
-            </div>
-
-            <div class="timeline-bar">
-              <input type="range" id="frame-slider" min="0" max="0" value="0" disabled>
-              <span id="frame-counter" class="frame-badge">0 / 0</span>
-            </div>
-
-            <div class="playback-chips">
-              <button type="button" id="blink-mode-btn" class="btn-micro" title="Toggle Time vs Wavelength Blink Mode">Time</button>
-              <button type="button" id="loop-btn" class="btn-micro active" title="Toggle Loop (L)">Loop</button>
-              <button type="button" id="bounce-btn" class="btn-micro" title="Toggle Bounce / Ping-Pong">Bounce</button>
-              <label for="speed-select" class="fps-label">FPS:
-                <select id="speed-select" class="micro-select">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="4" selected>4</option>
-                  <option value="8">8</option>
-                  <option value="12">12</option>
-                  <option value="15">15</option>
-                </select>
-              </label>
-            </div>
-          </div>
-
-          <!-- A/B Comparison & Image Subtraction Toolbar -->
-          <div class="ab-deck">
-            <button type="button" id="set-frame-a-btn" class="btn-ab" title="Set current frame as reference Frame A">Set A</button>
-            <button type="button" id="set-frame-b-btn" class="btn-ab" title="Set current frame as comparison Frame B">Set B</button>
-            <button type="button" id="blink-ab-btn" class="btn-ab" title="Blink exclusively between Frame A and Frame B">Blink A/B</button>
-            <button type="button" id="diff-ab-btn" class="btn-ab" title="Toggle Difference Image (B - A)">Diff (B-A)</button>
-            <button type="button" id="export-gif-btn" class="btn-ab" title="Export animated GIF">&#128190; GIF</button>
-            <button type="button" id="export-fits-btn" class="btn-ab" title="Export scientific FITS">&#128190; FITS</button>
-            <span id="ab-status" class="ab-pill">A: #1 &bull; B: #2</span>
-          </div>
+          <select id="detector-select" name="detector" class="hidden">
+            <option value="1">D1</option>
+            <option value="2">D2</option>
+            <option value="3">D3</option>
+            <option value="4">D4</option>
+            <option value="5" selected>D5</option>
+            <option value="6">D6</option>
+          </select>
         </div>
 
-        <!-- Column 3: 1D Spectrum, Light Curve & Web Audio Sonification -->
-        <div class="studio-right-card">
-          <div id="spectrum-section" class="spectrum-panel">
-            <div class="spectrum-header">
-              <div>
-                <h4>SPECTRUM &amp; LIGHT CURVE</h4>
-                <div id="spectrum-coords-text" class="sub-label">Click sky pixel to extract multi-band SED</div>
-              </div>
-              <div class="spectrum-controls">
-                <select id="spectrum-radius-select" class="micro-select">
-                  <option value="1" selected>1 px</option>
-                  <option value="2">3x3</option>
-                  <option value="3">5x5</option>
-                </select>
-                <button type="button" id="spectrum-mode-btn" class="btn-micro" title="Toggle SED vs Light Curve">View: SED</button>
-              </div>
-            </div>
-
-            <!-- Spectrum Canvas -->
-            <div class="spectrum-canvas-wrap">
-              <canvas id="spectrum-canvas" width="340" height="150"></canvas>
-            </div>
-
-            <div class="sonification-bar">
-              <button type="button" id="play-audio-btn" class="btn-neon-audio">&#9658; Play Audio</button>
-              <button type="button" id="stop-audio-btn" class="btn-neon-ghost hidden">&#9632; Stop</button>
-              <button type="button" id="export-spectrum-csv-btn" class="btn-micro">Export CSV</button>
-              <button type="button" id="close-spectrum-btn" class="btn-micro" title="Close Spectrum">&times;</button>
-            </div>
-
-            <div class="spectrum-hints">
-              <span id="spectrum-stats">0.75 - 5.00 &mu;m multi-band photometry</span>
-              <span id="spectrum-sonification-hint">Pitch &prop; flux &bull; Web Audio API</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- SECTION 3: ALADIN SKY CONTEXT (Interactive Survey Sky Map)    -->
-    <!-- ============================================================== -->
-    <section id="view-aladin" class="hud-section" aria-labelledby="tab-aladin">
-      <div class="aladin-bento">
-        <div class="aladin-top-bar">
-          <div class="aladin-info">
-            <h3><span class="accent-dot"></span> Aladin Lite Multi-Survey Sky Context</h3>
-            <span class="sub-label">Compare SPHEREx field coordinates with CDS Sky Surveys (2MASS / AllWISE / DSS2)</span>
-          </div>
-          <div class="aladin-actions">
-            <button type="button" id="toggle-aladin-btn" class="btn btn-primary-gradient">Refresh Sky Context</button>
-          </div>
-        </div>
-
-        <div id="aladin-section" class="aladin-container">
-          <div id="aladin-lite-div" class="aladin-viewport"></div>
-        </div>
-
-        <div class="aladin-cards-row">
-          <div class="context-card">
-            <strong>Gaia DR3 (J2016.0)</strong>
-            <p>Optical astrometric baseline with proper motion vectors.</p>
-          </div>
-          <div class="context-card">
-            <strong>AllWISE (2010 Epoch)</strong>
-            <p>15-year historical infrared baseline (W1-W4) for orbital shift verification.</p>
-          </div>
-          <div class="context-card">
-            <strong>CADC NEOSSat</strong>
-            <p>Near-Earth orbit fast-moving asteroid and satellite cross-matches.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============================================================== -->
-    <!-- SECTION 4: CITIZEN SCIENCE LAB (Discovery Logger, Ruler, Tour) -->
-    <!-- ============================================================== -->
-    <section id="view-lab" class="hud-section" aria-labelledby="tab-lab">
-      <div class="lab-bento">
-        <!-- Candidate Discovery Logger Form -->
-        <div id="candidate-section" class="bento-card candidate-card">
-          <div class="card-header">
-            <div>
-              <h3><span class="accent-dot magenta"></span> Citizen Science Discovery Logger</h3>
-              <p class="card-desc">Log candidate Planet X bodies, fast-moving asteroids, or infrared variables:</p>
-            </div>
-            <button type="button" id="close-candidate-btn" class="btn-micro" aria-label="Close Candidate Logger">&times;</button>
-          </div>
-
-          <form id="candidate-form" class="candidate-form-grid">
-            <div class="form-field">
-              <label for="cand-name">Observer / Object Name</label>
-              <input type="text" id="cand-name" placeholder="e.g. PX-Candidate-01" required>
-            </div>
-            <div class="form-field">
-              <label for="cand-class">Classification</label>
-              <select id="cand-class">
-                <option value="Planet X Candidate" selected>Planet X Candidate</option>
-                <option value="Brown Dwarf">Brown Dwarf</option>
-                <option value="Near-Earth Asteroid">Near-Earth Asteroid</option>
-                <option value="Variable Star">Variable Star</option>
-                <option value="Transient / Flare">Transient / Flare</option>
-                <option value="Other">Other</option>
+        <details class="drawer-advanced-accordion">
+          <summary>Advanced Pipeline Settings (Background, Masking, Stretch)</summary>
+          <div class="advanced-settings-inner">
+            <div class="form-group">
+              <label for="bg-select" class="drawer-label">Background</label>
+              <select id="bg-select" name="background">
+                <option value="median" selected>Median (recommended)</option>
+                <option value="zodi">Zodiacal + Median</option>
+                <option value="none">None</option>
               </select>
             </div>
-            <div class="form-field">
-              <label for="cand-ra">Right Ascension (&deg;)</label>
-              <input type="number" id="cand-ra" step="0.000001" required>
+            <div class="form-group">
+              <label for="mask-select" class="drawer-label">Masking</label>
+              <select id="mask-select" name="mask_level">
+                <option value="minimal" selected>Minimal (unusable only)</option>
+                <option value="strict">Strict (artifacts/outliers)</option>
+              </select>
             </div>
-            <div class="form-field">
-              <label for="cand-dec">Declination (&deg;)</label>
-              <input type="number" id="cand-dec" step="0.000001" required>
+            <div class="form-group">
+              <label for="stretch-select" class="drawer-label">Stretch</label>
+              <select id="stretch-select" name="stretch">
+                <option value="global" selected>Global Dynamic (Asinh)</option>
+                <option value="frame">Per-Frame Scaled</option>
+              </select>
             </div>
-            <div class="form-field">
-              <label for="cand-motion">Proper Motion (&quot;/yr)</label>
-              <input type="number" id="cand-motion" step="0.01" value="0.0">
+            <div class="form-group">
+              <label for="bin-input" class="drawer-label">Bin Window (Days)</label>
+              <input type="number" id="bin-input" name="bin_days" min="1" max="180" value="30">
             </div>
-            <div class="form-field">
-              <label for="cand-pa">Position Angle (&deg; E of N)</label>
-              <input type="number" id="cand-pa" step="0.1" value="0.0">
+            <div class="form-group">
+              <label for="max-frames-input" class="drawer-label">Max Exposures</label>
+              <input type="number" id="max-frames-input" name="max_frames" min="2" max="150" value="60">
             </div>
-            <div class="form-field form-field-full">
-              <label for="cand-notes">Observational Notes</label>
-              <input type="text" id="cand-notes" placeholder="e.g. Motion detected between Frame 1 and 4 in D5" maxlength="256">
-            </div>
-            <div class="form-actions-full">
-              <button type="submit" id="save-candidate-btn" class="btn btn-primary-gradient">&#128206; Save Discovery Finding</button>
-              <button type="button" id="export-candidates-btn" class="btn btn-glass">&#128190; Export JSON</button>
-              <span id="candidate-status" class="candidate-status"></span>
-            </div>
-          </form>
+          </div>
+        </details>
 
-          <!-- Logged Discoveries List -->
-          <div class="candidate-findings">
-            <h4>Logged Discoveries</h4>
-            <div id="candidates-list" class="candidates-list">
-              <p class="empty-state">No candidates logged for this sequence yet. Use the Motion Ruler or click on an object to log one!</p>
-            </div>
+        <div class="drawer-form-actions">
+          <button type="submit" id="submit-btn" class="btn-primary-action full-width">&#10024; LOAD SKY SEQUENCE</button>
+          <div class="secondary-actions-row">
+            <button type="button" id="share-link-btn" class="btn-secondary-action">Copy Link</button>
+            <button type="button" id="embed-snippet-btn" class="btn-secondary-action">Embed</button>
           </div>
         </div>
-
-        <!-- Frame Quality Metadata Table -->
-        <div id="table-section" class="bento-card table-card">
-          <div class="card-header">
-            <h3><span class="accent-dot cyan"></span> Frame Quality Metadata</h3>
-            <span id="truncation-notice" class="chip-badge hidden">TRUNCATED</span>
-          </div>
-          <div class="table-scroll-wrap">
-            <table id="frames-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Date (UTC)</th>
-                  <th>MJD</th>
-                  <th>&lambda; (&mu;m)</th>
-                  <th>Det</th>
-                  <th>Exposures</th>
-                  <th>Flagged</th>
-                  <th>Version</th>
-                </tr>
-              </thead>
-              <tbody id="frames-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Floating Toast Notification System (Replaces big red bar) -->
-  <aside id="toast-container" class="toast-container hidden" role="alert" aria-live="assertive">
-    <div class="toast-card">
-      <span class="toast-icon" id="toast-icon">&#9888;</span>
-      <div class="toast-content">
-        <div id="toast-title" class="toast-title">NOTIFICATION</div>
-        <div id="toast-message" class="toast-message">Message text</div>
-      </div>
-      <button type="button" id="toast-dismiss-btn" class="toast-close">&times;</button>
+      </form>
     </div>
-  </aside>
+  </div>
 
-  <!-- Legacy Hidden Error & Warning Spans for Test Compatibility -->
-  <section id="warnings-section" class="hidden"><p id="warnings-text"></p></section>
-  <section id="error-section" class="hidden"><p id="error-message"></p></section>
-
-  <!-- Embed Snippet Modal -->
-  <section id="embed-box" class="embed-box hidden">
-    <div class="embed-modal-card">
-      <h3>Embed in your Website (Iframe)</h3>
-      <textarea id="embed-code-text" readonly rows="3"></textarea>
-      <button type="button" id="close-embed-btn" class="btn btn-glass">Close</button>
+  <!-- ============================================================== -->
+  <!-- SLIDE-OVER DRAWER: CITIZEN LAB & CANDIDATE OBSERVATION LOG     -->
+  <!-- ============================================================== -->
+  <div id="drawer-lab" class="cockpit-slide-drawer wide-drawer hidden" role="dialog" aria-labelledby="drawer-lab-title">
+    <div class="drawer-header">
+      <h3 id="drawer-lab-title">CITIZEN SCIENCE CANDIDATE OBSERVATION LOG</h3>
+      <button type="button" id="close-drawer-lab" class="drawer-close-btn">&times;</button>
     </div>
-  </section>
+    <div class="drawer-content">
+      <!-- Candidate Logger Form -->
+      <form id="candidate-form" class="candidate-form-grid">
+        <div class="form-group">
+          <label for="cand-name" class="drawer-label">Observer / Object Name</label>
+          <input type="text" id="cand-name" placeholder="e.g. PX-Candidate-01" required>
+        </div>
+        <div class="form-group">
+          <label for="cand-class" class="drawer-label">Classification</label>
+          <select id="cand-class">
+            <option value="Unclassified Moving Object / Brown Dwarf Candidate" selected>Unclassified Moving Object / Brown Dwarf Candidate</option>
+            <option value="Brown Dwarf">Brown Dwarf</option>
+            <option value="Near-Earth Asteroid">Near-Earth Asteroid</option>
+            <option value="Variable Star">Variable Star</option>
+            <option value="Transient / Flare">Transient / Flare</option>
+            <option value="Planet X Candidate">Planet X Candidate</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="cand-ra" class="drawer-label">Right Ascension (&deg;)</label>
+          <input type="number" id="cand-ra" step="0.000001" required>
+        </div>
+        <div class="form-group">
+          <label for="cand-dec" class="drawer-label">Declination (&deg;)</label>
+          <input type="number" id="cand-dec" step="0.000001" required>
+        </div>
+        <div class="form-group">
+          <label for="cand-motion" class="drawer-label">Proper Motion (&quot;/yr)</label>
+          <input type="number" id="cand-motion" step="0.01" value="0.0">
+        </div>
+        <div class="form-group">
+          <label for="cand-pa" class="drawer-label">Position Angle (&deg; E of N)</label>
+          <input type="number" id="cand-pa" step="0.1" value="0.0">
+        </div>
+        <div class="form-group">
+          <label for="cand-snr" class="drawer-label">Signal-to-Noise Ratio (SNR)</label>
+          <input type="number" id="cand-snr" step="0.1" value="12.5">
+        </div>
+        <div class="form-group form-col-span-2">
+          <label for="cand-notes" class="drawer-label">Observational Verification Notes</label>
+          <input type="text" id="cand-notes" placeholder="Motion detected across 12 epochs in D5; confirmed absent in D1 optical" maxlength="256">
+        </div>
+        <div class="form-actions-row form-col-span-2">
+          <button type="submit" id="save-candidate-btn" class="btn-primary-action">&#128206; LOG CANDIDATE FINDING</button>
+          <button type="button" id="export-candidates-btn" class="btn-secondary-action">&#128190; EXPORT JSON</button>
+          <span id="candidate-status" class="candidate-status-msg"></span>
+        </div>
+      </form>
 
-  <!-- Guided Challenge Tour Overlay Modal (Slice 10) -->
-  <div id="tour-modal" class="tour-modal hidden" role="dialog" aria-modal="true" aria-labelledby="tour-title">
-    <div class="tour-card">
-      <div class="tour-header">
-        <span id="tour-step-badge" class="tour-step-badge">Target 1 of 5</span>
-        <h3 id="tour-title">WISE 0855: Sub-stellar Brown Dwarf</h3>
-        <button type="button" id="close-tour-btn" class="btn-micro" aria-label="Close Tour">&times;</button>
-      </div>
-      <div class="tour-body">
-        <p id="tour-description">WISE 0855 is the fourth-closest known system to the Sun and the coldest known sub-stellar brown dwarf (-13 &deg;C). It emits almost exclusively in the thermal mid-infrared (D5 &amp; D6, 3.8-5.0 &mu;m) and is completely invisible in optical and near-IR bands!</p>
-        <div class="tour-mission-target">
-          <strong>Key Science:</strong> <span id="tour-target-hint">Switch between D1 and D5/D6 to see the object appear. Use the Motion Ruler to measure its extreme proper motion of 8.1 arcsec/yr.</span>
+      <!-- Logged Discoveries List -->
+      <div class="logged-findings-section">
+        <h4 class="findings-subheading">Candidate Observation Log</h4>
+        <div id="candidates-list" class="findings-list-wrap">
+          <p class="empty-state-msg">No candidates logged for this sequence yet. Click on any moving source in the canvas or use the Motion Ruler to auto-fill!</p>
         </div>
       </div>
-      <div class="tour-actions">
-        <button type="button" id="tour-prev-btn" class="btn btn-secondary">Previous</button>
-        <button type="button" id="tour-load-btn" class="btn btn-primary-gradient">Load Target</button>
-        <button type="button" id="tour-next-btn" class="btn btn-secondary">Next Target &raquo;</button>
+
+      <!-- Frame Quality Metadata Table -->
+      <div class="frame-metadata-table-section">
+        <div class="table-header-row">
+          <h4 class="findings-subheading">Frame Quality Metadata</h4>
+          <span id="truncation-notice" class="chip-badge-warn hidden">TRUNCATED</span>
+        </div>
+        <div class="table-scroll-container">
+          <table id="frames-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date (UTC)</th>
+                <th>MJD</th>
+                <th class="preserve-unit-case">&lambda; (&mu;m)</th>
+                <th>Det</th>
+                <th>Exposures</th>
+                <th>Flagged</th>
+                <th>Version</th>
+              </tr>
+            </thead>
+            <tbody id="frames-table-body"></tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Bottom Mini HUD Footer -->
-  <footer id="app-footer" class="hud-footer">
-    <div class="footer-left">
-      <span>NASA Space Apps Challenge 2026</span> &bull; <span>Planet X and SPHEREx</span> &bull; <span id="data-through-text">Data through: SPHEREx Ops</span>
+  <!-- ============================================================== -->
+  <!-- MODAL: GUIDED SCIENCE CHALLENGE TOUR                           -->
+  <!-- ============================================================== -->
+  <div id="tour-modal" class="tour-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="tour-title">
+    <div class="tour-modal-card">
+      <div class="tour-header">
+        <span id="tour-step-badge" class="tour-step-tag">Step 1 of 5</span>
+        <h3 id="tour-title">WISE 0855: Sub-stellar Brown Dwarf</h3>
+        <button type="button" id="close-tour-btn" class="tour-close-btn">&times;</button>
+      </div>
+      <div class="tour-body">
+        <div class="tour-sub-block">
+          <h5 class="tour-block-label">WHAT IT IS</h5>
+          <p id="tour-description">WISE 0855 is the fourth-closest known system to the Sun and the coldest known sub-stellar brown dwarf (~250 K, model range 225-260 K). It emits almost exclusively in the thermal mid-infrared (D5 &amp; D6, 3.8-5.0 &mu;m) and is undetectable by SPHEREx in D1-D3.</p>
+        </div>
+        <div class="tour-sub-block">
+          <h5 class="tour-block-label">WHY IT MATTERS</h5>
+          <p id="tour-science">Across 10 months (12 frames), WISE 0855 shifts ~7&quot; (~1.1 SPHEREx pixels at 6.15&quot;/px)&mdash;requiring sub-pixel centroiding rather than simple blink comparison.</p>
+        </div>
+        <div class="tour-sub-block">
+          <h5 class="tour-block-label">WHAT TO TRY</h5>
+          <p id="tour-target-hint">Toggle between D1 and D5 to see the brown dwarf materialize. Click Centroid Lock or the Motion Ruler to measure its extreme proper motion of 8.1 &quot;/yr.</p>
+        </div>
+      </div>
+      <div class="tour-actions-bar">
+        <button type="button" id="tour-prev-btn" class="btn-secondary-action">Previous</button>
+        <button type="button" id="tour-load-btn" class="btn-primary-action">Load Target</button>
+        <button type="button" id="tour-next-btn" class="btn-secondary-action">Next Target &raquo;</button>
+      </div>
     </div>
-    <div class="footer-right">
-      <a href="https://github.com/unhalekartik25/MURFX" target="_blank" rel="noopener">GitHub Repository</a>
+  </div>
+
+  <!-- Embed Snippet Modal -->
+  <div id="embed-box" class="embed-modal-backdrop hidden">
+    <div class="embed-modal-card">
+      <h3>Embed in your Website (Iframe)</h3>
+      <textarea id="embed-code-text" readonly rows="3"></textarea>
+      <button type="button" id="close-embed-btn" class="btn-secondary-action">Close</button>
     </div>
-  </footer>
+  </div>
+
+  <!-- Toast Notification System -->
+  <aside id="toast-container" class="toast-floating-container hidden" role="alert" aria-live="assertive">
+    <div class="toast-card">
+      <span class="toast-status-icon" id="toast-icon">&#9888;</span>
+      <div class="toast-text-wrap">
+        <div id="toast-title" class="toast-title-text">NOTIFICATION</div>
+        <div id="toast-message" class="toast-message-body">Message text</div>
+      </div>
+      <button type="button" id="toast-dismiss-btn" class="toast-dismiss">&times;</button>
+    </div>
+  </aside>
+
+  <!-- Legacy Hidden Compatibility Elements -->
+  <div id="warnings-section" class="hidden"><span id="warnings-text"></span></div>
+  <div id="error-section" class="hidden"><span id="error-message"></span></div>
+  <div id="ab-status" class="hidden">A: #1 &bull; B: #2</div>
+  <div id="meta-mjd" class="hidden"></div>
+  <div id="meta-date" class="hidden"></div>
+  <div id="meta-wavelength" class="hidden"></div>
+  <div id="toggle-scale" class="hidden"><input type="checkbox" checked></div>
+  <div id="toggle-compass" class="hidden"><input type="checkbox" checked></div>
+  <div id="toggle-wise" class="hidden"><input type="checkbox" checked></div>
+  <div id="toggle-ruler" class="hidden"><input type="checkbox"></div>
+  <div id="toggle-centroid" class="hidden"><input type="checkbox"></div>
+  <div id="toggle-flags" class="hidden"><input type="checkbox"></div>
+  <div id="toggle-smooth" class="hidden"><input type="checkbox"></div>
+  <button type="button" id="blink-mode-btn" class="hidden">Time</button>
+  <button type="button" id="toggle-aladin-btn" class="hidden">Aladin</button>
+  <button type="button" id="close-candidate-btn" class="hidden"></button>
+  <span id="spectrum-coords-text" class="hidden"></span>
+  <span id="spectrum-stats" class="hidden"></span>
+  <button type="button" id="close-spectrum-btn" class="hidden"></button>
+  <span id="detail-date" class="hidden">--</span>
+  <span id="detail-flagged" class="hidden">0.0%</span>
+  <span id="data-through-text" class="hidden"></span>
 
   <script type="module" src="app.js"></script>
 </body>
