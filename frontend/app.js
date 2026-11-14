@@ -187,6 +187,23 @@ const tourLoadBtn = document.getElementById("tour-load-btn");
 let rulerStart = null;
 let rulerEnd = null;
 
+// Pan & Zoom and Centroid Inspector (Slice 11)
+const canvasViewport = document.getElementById("canvas-viewport");
+const zoomInBtn = document.getElementById("zoom-in-btn");
+const zoomOutBtn = document.getElementById("zoom-out-btn");
+const zoomResetBtn = document.getElementById("zoom-reset-btn");
+const toggleCentroid = document.getElementById("toggle-centroid");
+const centroidPin = document.getElementById("centroid-pin");
+const centroidReadout = document.getElementById("centroid-readout");
+const exportCandidatesBtn = document.getElementById("export-candidates-btn");
+
+let zoomLevel = 1.0;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+
 const detailDate = document.getElementById("detail-date");
 const detailMjd = document.getElementById("detail-mjd");
 const detailWavelength = document.getElementById("detail-wavelength");
@@ -384,6 +401,56 @@ function initEventListeners() {
   if (tourNextBtn) tourNextBtn.addEventListener("click", handleTourNext);
   if (tourPrevBtn) tourPrevBtn.addEventListener("click", handleTourPrev);
   if (tourLoadBtn) tourLoadBtn.addEventListener("click", loadTourTarget);
+
+  // Pan & Zoom, Centroid & Discovery Export (Slice 11)
+  if (zoomInBtn) zoomInBtn.addEventListener("click", () => setZoom(zoomLevel * 1.3));
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", () => setZoom(zoomLevel / 1.3));
+  if (zoomResetBtn) zoomResetBtn.addEventListener("click", resetZoom);
+
+  if (toggleCentroid) {
+    toggleCentroid.addEventListener("change", () => {
+      if (!toggleCentroid.checked) {
+        if (centroidPin) centroidPin.classList.add("hidden");
+        if (centroidReadout) centroidReadout.classList.add("hidden");
+      }
+    });
+  }
+
+  if (exportCandidatesBtn) {
+    exportCandidatesBtn.addEventListener("click", exportCandidatesJson);
+  }
+
+  if (canvasContainer) {
+    canvasContainer.addEventListener("wheel", (e) => {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.15 : 0.87;
+      setZoom(zoomLevel * factor);
+    }, { passive: false });
+
+    canvasContainer.addEventListener("mousedown", (e) => {
+      if (zoomLevel > 1.0 && e.button === 0) {
+        isDragging = true;
+        dragStartX = e.clientX - panX;
+        dragStartY = e.clientY - panY;
+        canvasContainer.classList.add("is-panning");
+      }
+    });
+
+    window.addEventListener("mousemove", (e) => {
+      if (isDragging) {
+        panX = e.clientX - dragStartX;
+        panY = e.clientY - dragStartY;
+        applyViewportTransform();
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      if (isDragging) {
+        isDragging = false;
+        canvasContainer.classList.remove("is-panning");
+      }
+    });
+  }
 
   // Share & Embed Buttons
   shareLinkBtn.addEventListener("click", copyShareLink);
@@ -747,6 +814,7 @@ async function loadSequenceResult(result) {
   updateAbStatus();
   showFrame(0);
   clearRuler();
+  resetZoom();
   loadCandidates(currentSequenceKey);
 
   // Check prefers-reduced-motion before autoplay
@@ -1257,6 +1325,22 @@ function handleKeyboardShortcuts(e) {
         document.exitFullscreen().catch(() => {});
       }
       break;
+    case "+":
+    case "=":
+      e.preventDefault();
+      setZoom(zoomLevel * 1.3);
+      break;
+    case "-":
+    case "_":
+      e.preventDefault();
+      setZoom(zoomLevel / 1.3);
+      break;
+    case "z":
+    case "Z":
+    case "0":
+      e.preventDefault();
+      resetZoom();
+      break;
   }
 }
 
@@ -1308,6 +1392,12 @@ function handleCanvasClick(e) {
 
   const gridX = Math.round(px);
   const gridY = Math.round(py);
+
+  if (toggleCentroid && toggleCentroid.checked) {
+    computeSubPixelCentroid(gridX, gridY);
+    return;
+  }
+
   clickedPixelCoords = { x: gridX, y: gridY };
 
   // Position visual pin marker on canvas
@@ -2244,4 +2334,115 @@ async function handleCandidateSubmit(e) {
   } finally {
     if (saveBtn) saveBtn.disabled = false;
   }
+}
+
+// ============================================================================
+// Slice 11: Canvas Pan & Zoom, Sub-Pixel Centroid & Discovery Export
+// ============================================================================
+
+function applyViewportTransform() {
+  if (canvasViewport) {
+    canvasViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${zoomLevel})`;
+  }
+  if (zoomResetBtn) {
+    zoomResetBtn.textContent = `${zoomLevel.toFixed(1)}x (Reset)`;
+  }
+  if (canvasContainer) {
+    canvasContainer.classList.toggle("is-zoomed", zoomLevel > 1.0);
+  }
+}
+
+function setZoom(newZoom) {
+  const clamped = Math.max(1.0, Math.min(8.0, Math.round(newZoom * 10) / 10));
+  zoomLevel = clamped;
+  if (zoomLevel <= 1.0) {
+    panX = 0;
+    panY = 0;
+  }
+  applyViewportTransform();
+}
+
+function resetZoom() {
+  zoomLevel = 1.0;
+  panX = 0;
+  panY = 0;
+  applyViewportTransform();
+}
+
+function computeSubPixelCentroid(cx, cy) {
+  if (!ctx || !canvas) return;
+
+  const halfSize = 2; // 5x5 box
+  const x0 = Math.max(0, cx - halfSize);
+  const y0 = Math.max(0, cy - halfSize);
+  const w = Math.min(canvas.width - x0, 5);
+  const h = Math.min(canvas.height - y0, 5);
+
+  let imgData;
+  try {
+    imgData = ctx.getImageData(x0, y0, w, h);
+  } catch {
+    return;
+  }
+  const data = imgData.data;
+
+  let minVal = Infinity;
+  let maxVal = -Infinity;
+  const intensities = [];
+
+  for (let i = 0; i < data.length; i += 4) {
+    const val = data[i]; // Red channel in grayscale PNG
+    intensities.push(val);
+    if (val < minVal) minVal = val;
+    if (val > maxVal) maxVal = val;
+  }
+
+  let sumW = 0;
+  let sumWX = 0;
+  let sumWY = 0;
+
+  for (let dy = 0; dy < h; dy++) {
+    for (let dx = 0; dx < w; dx++) {
+      const idx = dy * w + dx;
+      const weight = Math.max(0, intensities[idx] - minVal);
+      sumW += weight;
+      sumWX += weight * (x0 + dx);
+      sumWY += weight * (y0 + dy);
+    }
+  }
+
+  let finalX = cx;
+  let finalY = cy;
+  if (sumW > 0) {
+    finalX = sumWX / sumW;
+    finalY = sumWY / sumW;
+  }
+
+  const sky = pixelToSky(finalX, finalY);
+
+  if (centroidPin) {
+    centroidPin.style.left = `${finalX}px`;
+    centroidPin.style.top = `${finalY}px`;
+    centroidPin.classList.remove("hidden");
+  }
+
+  if (centroidReadout) {
+    centroidReadout.style.left = `${finalX + 10}px`;
+    centroidReadout.style.top = `${finalY - 20}px`;
+    centroidReadout.textContent = `Centroid: (${finalX.toFixed(2)}, ${finalY.toFixed(2)}) \u2022 RA: ${sky.ra.toFixed(6)}\u00B0, Dec: ${sky.dec.toFixed(6)}\u00B0 \u2022 Peak: ${maxVal.toFixed(0)}`;
+    centroidReadout.classList.remove("hidden");
+  }
+
+  if (candRa) candRa.value = sky.ra.toFixed(6);
+  if (candDec) candDec.value = sky.dec.toFixed(6);
+}
+
+function exportCandidatesJson() {
+  const url = `/api/v1/candidates/export${currentSequenceKey ? `?sequence_key=${currentSequenceKey}` : ""}`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = currentSequenceKey ? `murfx_candidates_${currentSequenceKey.slice(0, 8)}.json` : "murfx_all_candidates.json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }

@@ -360,6 +360,17 @@ body.embed-mode .viewer-card {
   outline: none;
 }
 
+.canvas-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+  user-select: none;
+}
+
 #blink-canvas {
   width: 100%;
   height: auto;
@@ -975,6 +986,49 @@ body.embed-mode .viewer-card {
   margin-top: 1.5rem;
   border-top: 1px solid var(--border-color);
   padding-top: 1rem;
+}
+
+.candidate-findings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+/* Sub-Pixel Centroid & Pan/Zoom (Slice 11) */
+.centroid-pin-marker {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px dashed #10b981;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 6;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.centroid-readout {
+  position: absolute;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #10b981;
+  color: #10b981;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+.canvas-wrapper.is-zoomed {
+  cursor: grab;
+}
+
+.canvas-wrapper.is-panning {
+  cursor: grabbing;
 }
 
 .candidate-findings h4 {

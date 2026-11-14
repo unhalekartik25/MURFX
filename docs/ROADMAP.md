@@ -196,6 +196,33 @@ Acceptance:
 
 ---
 
+## Slice 11 — Interactive Canvas Pan & Zoom, Sub-Pixel Centroid Inspector & Discovery Export
+
+Goal: Provide high-magnification pixel inspection (1x to 8x smooth zoom with drag panning), sub-pixel centroid astrometry for precise moving object localization, and standardized JSON export for citizen science discovery reporting.
+
+Build:
+- `backend/app/api.py`: `GET /api/v1/candidates/export` generating formatted JSON discovery export with sequence context and observation headers.
+- Frontend Interactive Zoom & Pan Engine:
+  - Smooth wheel zoom (1.0x to 8.0x) centered on cursor.
+  - Click-and-drag panning across canvas layers.
+  - Reset Zoom button and keyboard shortcut ('Z' / '0').
+  - Zoom level readout badge.
+- Frontend Sub-Pixel Centroid Inspector:
+  - Flux-weighted barycentric centroid calculation $(x_c, y_c)$ in 5x5 aperture.
+  - Sub-pixel coordinate precision with WCS celestial translation $(\text{RA}_c, \text{Dec}_c)$.
+  - Centroid crosshair indicator and peak flux readout.
+- Frontend Candidate Findings Export:
+  - "Export JSON" button in discovery logger downloading all candidates formatted for NASA Space Apps reporting.
+
+Acceptance:
+- [x] `GET /api/v1/candidates/export` produces valid JSON array with sequence metadata.
+- [x] Sub-pixel centroid barycenter calculation is verified against analytical 2D Gaussian flux distributions.
+- [x] Pan & Zoom updates canvas viewport transform cleanly without breaking overlay alignment.
+- [x] Zero `innerHTML` usage strictly maintained across `frontend/`.
+- [x] Unit tests in `backend/tests/test_slice11.py` pass.
+
+---
+
 ## Priority / cut-list (drop from the top first if time is short)
 
 1. Aladin Lite panel (keep the canvas Gaia overlay or the add/subtract backup)

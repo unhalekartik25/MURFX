@@ -161,9 +161,13 @@
         <label><input type="checkbox" id="toggle-wise" checked> AllWISE 2010</label>
         <label><input type="checkbox" id="toggle-neossat"> NEOSSat</label>
         <label><input type="checkbox" id="toggle-ruler"> Ruler</label>
+        <label><input type="checkbox" id="toggle-centroid"> Centroid</label>
         <label><input type="checkbox" id="toggle-flags"> Flags</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
         <label><input type="checkbox" id="toggle-invert"> Invert</label>
+        <button type="button" id="zoom-in-btn" class="btn btn-chip" title="Zoom In (+)">Zoom +</button>
+        <button type="button" id="zoom-out-btn" class="btn btn-chip" title="Zoom Out (-)">Zoom -</button>
+        <button type="button" id="zoom-reset-btn" class="btn btn-chip" title="Reset Zoom & Pan (Z / 0)">1.0x (Reset)</button>
         <button type="button" id="toggle-aladin-btn" class="btn btn-chip">Aladin Context</button>
         <button type="button" id="open-candidate-btn" class="btn btn-chip" title="Citizen Science Candidate Discovery Logger">&#128221; Log Candidate</button>
         <span id="hover-coords" class="hover-coords">RA: --, Dec: --</span>
@@ -171,17 +175,21 @@
 
       <!-- Main Canvas Container -->
       <div class="canvas-wrapper" id="canvas-container" tabindex="0" title="Click or use keyboard shortcuts (Space, Left/Right, [, ], L)">
-        <canvas id="blink-canvas" width="400" height="400"></canvas>
-        <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
-        <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="400" height="400"></canvas>
-        <canvas id="ruler-canvas" class="ruler-overlay-canvas" width="400" height="400"></canvas>
+        <div id="canvas-viewport" class="canvas-viewport">
+          <canvas id="blink-canvas" width="400" height="400"></canvas>
+          <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
+          <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="400" height="400"></canvas>
+          <canvas id="ruler-canvas" class="ruler-overlay-canvas" width="400" height="400"></canvas>
+          <!-- Spectrum Click Pin Marker (Slice 6) -->
+          <div id="spectrum-pin" class="spectrum-pin-marker hidden"></div>
+          <!-- Centroid Pin Marker (Slice 11) -->
+          <div id="centroid-pin" class="centroid-pin-marker hidden"></div>
+        </div>
         <div id="ruler-readout" class="ruler-readout hidden"></div>
+        <div id="centroid-readout" class="centroid-readout hidden"></div>
         
         <!-- Center Crosshair Layer -->
         <div id="crosshair-layer" class="crosshair-overlay"></div>
-
-        <!-- Spectrum Click Pin Marker (Slice 6) -->
-        <div id="spectrum-pin" class="spectrum-pin-marker hidden"></div>
 
         <!-- Compass Layer (N top, E left) -->
         <div id="compass-layer" class="compass-overlay">
@@ -391,7 +399,10 @@
       </form>
 
       <div class="candidate-findings">
-        <h4>Logged Discoveries</h4>
+        <div class="candidate-findings-header">
+          <h4>Logged Discoveries</h4>
+          <button type="button" id="export-candidates-btn" class="btn btn-chip" title="Download logged candidate discoveries as JSON">&#128190; Export JSON</button>
+        </div>
         <div id="candidates-list" class="candidates-list">
           <p class="empty-state">No candidates logged for this sequence yet. Use the Motion Ruler or click on an object to log one!</p>
         </div>

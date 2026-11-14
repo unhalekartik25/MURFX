@@ -687,3 +687,31 @@ async def list_candidates(sequence_key: str | None = Query(default=None, descrip
     """List citizen science discovery findings (Slice 10)."""
     return disk_cache.get_candidates(sequence_key=sequence_key)
 
+
+@router.get("/candidates/export", tags=["candidates"])
+async def export_candidates(
+    sequence_key: str | None = Query(default=None, description="Filter by sequence hash"),
+) -> Response:
+    """Export citizen science discovery findings as downloadable JSON formatted for NASA Space Apps reporting (Slice 11)."""
+    import datetime
+    import json
+
+    findings = disk_cache.get_candidates(sequence_key=sequence_key)
+    export_payload = {
+        "project": "MURFX SPHEREx Wise-Cube & Blink Explorer",
+        "challenge": "NASA Space Apps Challenge 2026 - Planet X and SPHEREx",
+        "exported_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "filter_sequence_key": sequence_key,
+        "total_findings": len(findings),
+        "findings": findings,
+    }
+    filename = f"murfx_candidates_{sequence_key[:8]}.json" if sequence_key else "murfx_all_candidates.json"
+    return Response(
+        content=json.dumps(export_payload, indent=2),
+        media_type="application/json",
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"',
+            "Cache-Control": "no-cache",
+        },
+    )
+
