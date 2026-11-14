@@ -65,6 +65,14 @@
             <option value="5" selected>D5 (3.83 - 4.41 &mu;m)</option>
             <option value="6">D6 (4.42 - 5.00 &mu;m)</option>
           </select>
+          <div class="detector-chips">
+            <button type="button" class="btn btn-chip det-chip" data-det="1" title="D1: 0.75-1.09 &mu;m (Near-IR / Reflected)">D1</button>
+            <button type="button" class="btn btn-chip det-chip" data-det="2" title="D2: 1.10-1.62 &mu;m (J-Band / Stellar)">D2</button>
+            <button type="button" class="btn btn-chip det-chip" data-det="3" title="D3: 1.63-2.41 &mu;m (H/K-Band / Nebulae)">D3</button>
+            <button type="button" class="btn btn-chip det-chip" data-det="4" title="D4: 2.42-3.82 &mu;m (Dust & Ice Bands)">D4</button>
+            <button type="button" class="btn btn-chip det-chip active" data-det="5" title="D5: 3.83-4.41 &mu;m (Cool Brown Dwarfs / Planet X)">D5</button>
+            <button type="button" class="btn btn-chip det-chip" data-det="6" title="D6: 4.42-5.00 &mu;m (Thermal Infrared / Deep Sky)">D6</button>
+          </div>
         </div>
 
         <div class="form-group">
@@ -149,6 +157,7 @@
         <label><input type="checkbox" id="toggle-compass" checked> Compass</label>
         <label><input type="checkbox" id="toggle-scale" checked> Scale Bar</label>
         <label><input type="checkbox" id="toggle-gaia" checked> Gaia DR3</label>
+        <label><input type="checkbox" id="toggle-wise" checked> AllWISE 2010</label>
         <label><input type="checkbox" id="toggle-neossat"> NEOSSat</label>
         <label><input type="checkbox" id="toggle-flags"> Flags</label>
         <label><input type="checkbox" id="toggle-smooth"> Smooth</label>
@@ -205,12 +214,13 @@
           <button type="button" id="bounce-btn" class="btn btn-chip" title="Toggle Bounce / Ping-Pong">Bounce</button>
         </div>
 
-        <!-- Blink A/B & Difference Imaging Toolbar (Slice 7) -->
+        <!-- Blink A/B & Difference Imaging Toolbar (Slice 7 & 8) -->
         <div class="ab-toolbar">
           <button type="button" id="set-frame-a-btn" class="btn btn-chip" title="Set current frame as reference Frame A">Set A</button>
           <button type="button" id="set-frame-b-btn" class="btn btn-chip" title="Set current frame as comparison Frame B">Set B</button>
           <button type="button" id="blink-ab-btn" class="btn btn-chip" title="Blink exclusively between Frame A and Frame B">Blink A/B</button>
           <button type="button" id="diff-ab-btn" class="btn btn-chip" title="Toggle Image Subtraction (B - A)">Diff (B - A)</button>
+          <button type="button" id="export-gif-btn" class="btn btn-chip" title="Export sequence as animated GIF">&#128190; Export GIF</button>
           <span id="ab-status" class="ab-status">A: Frame 1 &bull; B: Frame 2</span>
         </div>
 
@@ -274,6 +284,7 @@
               <option value="3">3 px (5x5)</option>
             </select>
           </label>
+          <button type="button" id="export-spectrum-csv-btn" class="btn btn-secondary" title="Export extracted spectrum points as CSV">Export CSV</button>
           <button type="button" id="play-audio-btn" class="btn btn-primary" title="Play Web Audio Sonification of Infrared Spectrum">&#9658; Play Audio</button>
           <button type="button" id="stop-audio-btn" class="btn btn-secondary hidden" title="Stop Audio">&#9632; Stop</button>
           <button type="button" id="close-spectrum-btn" class="btn btn-chip" title="Close Spectrum View">&times;</button>

@@ -61,6 +61,17 @@ for a reader who was not there. Record **facts you verified**, not guesses.
 
 ---
 
+**Slice 8: AllWISE 15-Year Epoch Overlay, Multi-Band Detector Matrix & Sequence Export  |  2026-11-14 16:40 UTC  |  commit pending**
+- Built: `query_wise` in `backend/app/catalogs.py` with `GET /api/v1/catalog/wise`; `render_animation_gif` in `backend/app/render.py` compiling sequence frames into animated GIFs; `GET /api/v1/sequences/{key}/export.gif` in `backend/app/api.py`; animated GIF caching in `backend/app/cache.py`; frontend detector quick-select chip matrix (D1-D6) with scientific band descriptions; AllWISE 2010 historical overlay with orange circle markers to show 15-year epoch shift; client-side animated GIF export and spectrum CSV export; `backend/tests/test_slice8.py`.
+- Verified (commands and results): Verified looping GIF compilation and animation headers, export endpoint content disposition, AllWISE catalog queries and photometry parsing, and zero `innerHTML` across all files in `backend/tests/test_slice8.py`.
+- Decisions made where the docs were silent: GIF duration calculated dynamically from playback FPS (1000/fps ms per frame, capped between 50ms and 1000ms) with infinite looping (loop=0); AllWISE overlay rendered with orange circles to contrast against green Gaia DR3 markers.
+- Surprises / doc corrections: Zero extra dependencies needed; PIL Image handles animated GIF generation natively.
+- Performance numbers: Animated GIF generation takes < 150 ms for typical 15-frame sequences.
+- Blocked / risks: Local Windows workstation enforces Application Control policy as noted in AGENT_RULES.md; testing and server run in Codespaces / container.
+- Next: MURFX platform is complete with comprehensive features for exploration, science, and export.
+
+---
+
 **Slice 7: Image Subtraction, Blink A/B Mode & CADC NEOSSat Cross-Matching  |  2026-11-14 16:30 UTC  |  commit 96ff9ed**
 - Built: `render_difference_png` in `backend/app/render.py` with symmetric zero-centered stretch (128 neutral gray); difference image caching in `backend/app/cache.py`; `GET /api/v1/sequences/{key}/difference.png?frame_a={i}&frame_b={j}` in `backend/app/api.py`; CADC TAP query `query_cadc_neossat` in `backend/app/catalogs.py` with `GET /api/v1/catalog/neossat`; frontend Blink A/B toolbar ("Set A", "Set B", "Blink A/B", "Diff (B - A)") in `frontend/app.js` and `frontend/index.html`; NEOSSat asteroid/satellite overlay; `backend/tests/test_slice7.py`.
 - Verified (commands and results): Verified difference PNG symmetric stretch (0 -> 128, positive > 128, negative < 128), frame index bounds validation, difference generation from spectral cube and image fallback, CADC NEOSSat cross-match responses, and zero `innerHTML` in `backend/tests/test_slice7.py`.

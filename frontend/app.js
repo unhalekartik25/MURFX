@@ -36,6 +36,7 @@ let abIntervalId = null;
 let isDiffMode = false;
 let diffImage = null;
 let neossatSources = [];
+let wiseSources = []; // AllWISE 2010 catalog sources (Slice 8)
 
 // DOM Elements
 const appHeader = document.getElementById("app-header");
@@ -126,6 +127,12 @@ const blinkAbBtn = document.getElementById("blink-ab-btn");
 const diffAbBtn = document.getElementById("diff-ab-btn");
 const abStatus = document.getElementById("ab-status");
 const toggleNeossat = document.getElementById("toggle-neossat");
+
+// AllWISE & Export DOM Elements (Slice 8)
+const toggleWise = document.getElementById("toggle-wise");
+const exportGifBtn = document.getElementById("export-gif-btn");
+const exportSpectrumCsvBtn = document.getElementById("export-spectrum-csv-btn");
+const detChips = document.querySelectorAll(".det-chip");
 
 const metaMjd = document.getElementById("meta-mjd");
 const metaDate = document.getElementById("meta-date");
@@ -278,6 +285,34 @@ function initEventListeners() {
       }
     });
   }
+
+  // Detector Matrix & AllWISE Overlay & Exports (Slice 8)
+  detChips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const detVal = chip.getAttribute("data-det");
+      if (detVal) {
+        detectorSelect.value = detVal;
+        detChips.forEach((c) => c.classList.toggle("active", c === chip));
+      }
+    });
+  });
+
+  detectorSelect.addEventListener("change", () => {
+    detChips.forEach((c) => c.classList.toggle("active", c.getAttribute("data-det") === detectorSelect.value));
+  });
+
+  if (toggleWise) {
+    toggleWise.addEventListener("change", () => {
+      if (toggleWise.checked) {
+        fetchWiseSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
+      } else if (frames[currentFrameIndex]) {
+        drawGaiaOverlay(frames[currentFrameIndex]);
+      }
+    });
+  }
+
+  if (exportGifBtn) exportGifBtn.addEventListener("click", exportGif);
+  if (exportSpectrumCsvBtn) exportSpectrumCsvBtn.addEventListener("click", exportSpectrumCsv);
 
   // Share & Embed Buttons
   shareLinkBtn.addEventListener("click", copyShareLink);
@@ -588,6 +623,12 @@ async function loadSequenceResult(result) {
     }
     updateScaleBar(result.grid.pixscale_arcsec);
     fetchGaiaSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
+    if (toggleWise && toggleWise.checked) {
+      fetchWiseSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
+    }
+    if (toggleNeossat && toggleNeossat.checked) {
+      fetchNeossatSources(parseFloat(raInput.value), parseFloat(decInput.value), parseFloat(fovInput.value));
+    }
   }
 
   // Render Table Rows
@@ -828,6 +869,25 @@ function drawGaiaOverlay(frame) {
         gaiaCtx.fillStyle = "#38bdf8";
         gaiaCtx.font = "10px sans-serif";
         gaiaCtx.fillText(ast.target_name || "NEOSSat", pt.x + 8, pt.y - 4);
+      }
+    });
+  }
+
+  // AllWISE 2010 Historical Catalog Overlay (Slice 8)
+  if (toggleWise && toggleWise.checked && wiseSources.length > 0) {
+    wiseSources.forEach((src) => {
+      const pt = worldToCanvasPx(src.ra, src.dec);
+      if (pt && pt.x >= -30 && pt.x <= gaiaCanvas.width + 30 && pt.y >= -30 && pt.y <= gaiaCanvas.height + 30) {
+        gaiaCtx.beginPath();
+        gaiaCtx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+        gaiaCtx.strokeStyle = "#f97316"; // Bright Orange for 2010 WISE
+        gaiaCtx.lineWidth = 1.6;
+        gaiaCtx.stroke();
+
+        gaiaCtx.fillStyle = "#f97316";
+        gaiaCtx.font = "10px sans-serif";
+        const magLabel = src.w2_mag < 90 ? `W2: ${src.w2_mag} (2010)` : "WISE 2010";
+        gaiaCtx.fillText(magLabel, pt.x + 9, pt.y + 3);
       }
     });
   }
@@ -1585,4 +1645,55 @@ async function fetchNeossatSources(ra, dec, radiusArcmin) {
   } catch {
     neossatSources = [];
   }
+}
+
+// Slice 8: AllWISE 2010 Historical Overlay & Sequence Exports
+async function fetchWiseSources(ra, dec, radiusArcmin) {
+  try {
+    const res = await fetch(`/api/v1/catalog/wise?ra=${ra}&dec=${dec}&radius_arcmin=${radiusArcmin}`);
+    if (res.ok) {
+      const data = await res.json();
+      wiseSources = data.sources || [];
+      if (frames[currentFrameIndex]) {
+        drawGaiaOverlay(frames[currentFrameIndex]);
+      }
+    }
+  } catch {
+    wiseSources = [];
+  }
+}
+
+function exportGif() {
+  if (!currentSequenceKey || frames.length === 0) {
+    alert("Load a sequence first before exporting GIF.");
+    return;
+  }
+  const url = `/api/v1/sequences/${currentSequenceKey}/export.gif?fps=${fps}`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `spherex_${currentSequenceKey.slice(0, 8)}_${fps}fps.gif`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function exportSpectrumCsv() {
+  if (!currentSpectrumData || !currentSpectrumData.points || currentSpectrumData.points.length === 0) {
+    alert("No extracted spectrum data to export. Click a pixel on the sky view first.");
+    return;
+  }
+  const rows = [["wavelength_um", "flux_mjy_sr", "sigma", "mjd", "detector"]];
+  currentSpectrumData.points.forEach((pt) => {
+    rows.push([pt.wavelength_um, pt.flux_mjy_sr, pt.sigma, pt.mjd, pt.detector]);
+  });
+  const csvContent = rows.map((r) => r.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `spectrum_${currentSequenceKey.slice(0, 8)}_x${currentSpectrumData.x}_y${currentSpectrumData.y}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }

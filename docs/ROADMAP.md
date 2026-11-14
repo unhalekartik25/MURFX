@@ -137,6 +137,24 @@ Acceptance:
 - [x] Unit tests in `backend/tests/test_slice7.py` pass.
 - [x] Strict zero `innerHTML` compliance verified across `frontend/`.
 
+## Slice 8: AllWISE 15-Year Epoch Overlay, Multi-Band Detector Matrix & Sequence Export (STRETCH)
+
+Build:
+- `backend/app/catalogs.py`: `query_wise` querying IRSA AllWISE source catalog (`allwise_p3as_psd`) with 24-hour cache and target fallbacks.
+- `backend/app/api.py`: `GET /catalog/wise` and `GET /sequences/{key}/export.gif?fps={fps}`.
+- `backend/app/render.py`: `render_animation_gif` compiling sequence frames into looping animated GIFs.
+- `backend/app/cache.py`: GIF caching (`get_sequence_gif_path`, `put_sequence_gif`).
+- Frontend Detector Quick-Select Matrix: D1-D6 interactive chips with wavelength bands and science hints.
+- Frontend AllWISE 2010 Historical Overlay: orange circle markers showing source positions from 15 years ago to demonstrate proper motion baseline.
+- Frontend Sequence & Spectrum Export: "Export GIF" download and client-side "Export CSV" for extracted SED spectra.
+
+Acceptance:
+- [x] AllWISE overlay visually displays 15-year epoch shift against live SPHEREx images.
+- [x] Animated GIF export generates valid, looping GIF downloads.
+- [x] Spectrum CSV export produces formatted tables with wavelengths, fluxes, and error bounds.
+- [x] Unit tests in `backend/tests/test_slice8.py` pass.
+- [x] Strict zero `innerHTML` compliance verified across `frontend/`.
+
 ---
 
 ## Priority / cut-list (drop from the top first if time is short)

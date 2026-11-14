@@ -180,6 +180,20 @@ body.embed-mode .viewer-card {
   min-height: 1.2em;
 }
 
+/* Detector Quick-Select Chips (Slice 8) */
+.detector-chips {
+  display: flex;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.detector-chips .det-chip {
+  padding: 0.25rem 0.45rem;
+  font-size: 0.75rem;
+  border-radius: 4px;
+}
+
 /* Advanced Options Disclosure */
 .advanced-details {
   border: 1px solid var(--border-color);

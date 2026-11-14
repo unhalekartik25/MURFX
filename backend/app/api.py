@@ -13,11 +13,11 @@ from fastapi import APIRouter, Path as FPath, Query, Request, Response, status
 from fastapi.responses import FileResponse, JSONResponse
 
 from backend.app.cache import disk_cache
-from backend.app.catalogs import query_cadc_neossat, query_gaia
+from backend.app.catalogs import query_cadc_neossat, query_gaia, query_wise
 from backend.app.config import DETECTOR_METADATA, settings
 from backend.app.errors import AppError
 from backend.app.jobs import job_registry
-from backend.app.render import render_difference_png
+from backend.app.render import render_animation_gif, render_difference_png
 from backend.app.resolver import resolve_object_name
 from backend.app.schemas import SequenceRequest, SequenceStatus, SpectrumPoint, SpectrumResult
 from backend.app.security import (
@@ -491,6 +491,86 @@ async def get_neossat_catalog(
 ) -> JSONResponse:
     """Query CADC NEOSSat observations for moving asteroid/debris cross-matching (Slice 7)."""
     data = query_cadc_neossat(ra, dec, radius_arcmin)
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content=data,
+        headers={"Cache-Control": "public, max-age=86400"},
+    )
+
+
+@router.get("/sequences/{key}/export.gif", tags=["sequences"])
+async def export_sequence_gif(
+    request: Request,
+    key: str = FPath(..., description="32-character hex sequence key"),
+    fps: int = Query(default=4, ge=1, le=15, description="Playback frames per second (1 to 15)"),
+) -> FileResponse:
+    """Export the sequence as an animated GIF for sharing and presentations (Slice 8).
+
+    Cache-Control: public, max-age=86400
+    """
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    client_ip = get_client_ip(request)
+    allowed, retry_after = frames_limiter.consume(client_ip)
+    if not allowed:
+        raise AppError(
+            code="RATE_LIMITED",
+            http_status=status.HTTP_429_TOO_MANY_REQUESTS,
+            message="Export rate limit exceeded.",
+            headers={"Retry-After": str(int(retry_after))},
+        )
+
+    # Check cached animated GIF
+    cached_gif = disk_cache.get_sequence_gif_path(key, fps)
+    if cached_gif and cached_gif.exists():
+        return FileResponse(
+            path=str(cached_gif),
+            media_type="image/gif",
+            headers={
+                "Cache-Control": "public, max-age=86400",
+                "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_{fps}fps.gif"',
+            },
+        )
+
+    meta = disk_cache.get_sequence_meta(key)
+    if not meta:
+        raise AppError("NOT_FOUND", 404, f"Sequence key '{key}' not found.")
+
+    frames_list = meta.get("frames", [])
+    if not frames_list:
+        raise AppError("NOT_FOUND", 404, f"No frames available for sequence {key}.")
+
+    png_bytes_list: list[bytes] = []
+    for idx in range(len(frames_list)):
+        p = disk_cache.get_frame_png_path(key, idx)
+        if p and p.exists():
+            png_bytes_list.append(p.read_bytes())
+
+    if not png_bytes_list:
+        raise AppError("NOT_FOUND", 404, "Rendered frames missing from cache.")
+
+    gif_bytes = render_animation_gif(png_bytes_list, fps=fps)
+    gif_path = disk_cache.put_sequence_gif(key, fps, gif_bytes)
+
+    return FileResponse(
+        path=str(gif_path),
+        media_type="image/gif",
+        headers={
+            "Cache-Control": "public, max-age=86400",
+            "Content-Disposition": f'attachment; filename="spherex_{key[:8]}_{fps}fps.gif"',
+        },
+    )
+
+
+@router.get("/catalog/wise", tags=["catalogs"])
+async def get_wise_catalog(
+    ra: float = Query(..., ge=0.0, lt=360.0, description="Right Ascension in ICRS degrees"),
+    dec: float = Query(..., ge=-90.0, le=90.0, description="Declination in ICRS degrees"),
+    radius_arcmin: float = Query(default=6.0, ge=0.5, le=20.0, description="Search radius in arcmin"),
+) -> JSONResponse:
+    """Query AllWISE (2010) infrared catalog sources for 15-year epoch baseline comparison (Slice 8)."""
+    data = query_wise(ra, dec, radius_arcmin)
     return JSONResponse(
         status_code=status.HTTP_200_OK,
         content=data,

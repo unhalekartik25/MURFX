@@ -185,6 +185,19 @@ class DiskCache:
         self._atomic_write_bytes(diff_path, data)
         return diff_path
 
+    def get_sequence_gif_path(self, key: str, fps: int) -> Path | None:
+        """Get path to a cached animated GIF if it exists (Slice 8)."""
+        gif_path = self.sequences_dir / key / f"anim_{fps}fps.gif"
+        return gif_path if gif_path.exists() else None
+
+    def put_sequence_gif(self, key: str, fps: int, data: bytes) -> Path:
+        """Atomically write an animated GIF (Slice 8)."""
+        seq_dir = self.sequences_dir / key
+        seq_dir.mkdir(parents=True, exist_ok=True)
+        gif_path = seq_dir / f"anim_{fps}fps.gif"
+        self._atomic_write_bytes(gif_path, data)
+        return gif_path
+
     def _atomic_write_bytes(self, destination: Path, data: bytes) -> None:
         """Write to a temporary file in the same directory, then atomically replace destination."""
         dest_dir = destination.parent

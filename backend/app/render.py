@@ -92,3 +92,32 @@ def render_difference_png(
     buf = io.BytesIO()
     img.save(buf, format="PNG", optimize=True)
     return buf.getvalue()
+
+
+def render_animation_gif(png_bytes_list: list[bytes], fps: int = 4) -> bytes:
+    """Compile a list of PNG frame bytes into a looping Animated GIF (Slice 8).
+
+    duration is in milliseconds per frame (e.g. fps=4 -> 250ms).
+    loop=0 means loop indefinitely.
+    """
+    if not png_bytes_list:
+        raise ValueError("Cannot render empty animation list")
+
+    frames: list[Image.Image] = []
+    for b in png_bytes_list:
+        img = Image.open(io.BytesIO(b)).convert("RGB")
+        frames.append(img)
+
+    buf = io.BytesIO()
+    duration_ms = max(50, int(1000 / max(1, min(15, fps))))
+
+    frames[0].save(
+        buf,
+        format="GIF",
+        save_all=True,
+        append_images=frames[1:],
+        duration=duration_ms,
+        loop=0,
+        optimize=True,
+    )
+    return buf.getvalue()
