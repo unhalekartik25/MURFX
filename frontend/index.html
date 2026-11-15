@@ -14,11 +14,12 @@
         <span class="live-pulse"></span>
         <span class="brand-title">MURFX</span>
         <span class="brand-sep">//</span>
-        <span class="brand-sub">SPHEREx CUBE</span>
+        <span class="brand-sub">SPHEREx WISE-CUBE</span>
       </div>
       <div id="active-target-badge" class="target-pill-badge">
         <span class="badge-label">TARGET:</span>
         <span id="header-target-name" class="badge-val">WISE 0855 (D5)</span>
+        <span id="header-provenance-badge" class="provenance-badge provenance-real">[&#10003; REAL]</span>
       </div>
     </div>
 
@@ -45,12 +46,22 @@
     </nav>
 
     <div class="hud-header-right">
+      <div class="release-selector-wrap" title="Pluggable SPHEREx Data Release &amp; Custom Cube Ingestion">
+        <label for="release-select" class="release-label">RELEASE:</label>
+        <select id="release-select" class="micro-select release-select">
+          <option value="dr1" selected>SPHEREx DR1 (May–Nov '25)</option>
+          <option value="dr2">SPHEREx DR2 (Nov '25–May '26)</option>
+          <option value="irsa_live">IRSA SIA/TAP Live</option>
+          <option value="custom">&#128194; Drop Custom Cube...</option>
+        </select>
+        <input type="file" id="custom-cube-file" accept=".fits,.fit,.fts,.json" class="hidden">
+      </div>
       <button type="button" id="launch-tour-btn" class="btn-neon-pulse" title="Launch Guided Challenge Tour">
         <span class="neon-icon">&#128640;</span>
-        <span>LAUNCH TOUR</span>
+        <span>TOUR</span>
       </button>
       <button type="button" id="open-candidate-btn" class="btn-neon-ghost" title="Open Citizen Science Discovery Logger">
-        <span>&#128221; LOG FINDING</span>
+        <span>&#128221; LOG</span>
       </button>
     </div>
   </header>
@@ -74,69 +85,137 @@
     <section id="view-setup" class="hud-section active-section" aria-labelledby="tab-setup">
       <div class="bento-grid setup-bento">
         <!-- Target Search & Resolver Card -->
-        <div class="bento-card card-glow search-card">
+        <div class="bento-card search-card">
           <div class="card-header">
-            <h3><span class="accent-dot"></span> Target Search &amp; SIMBAD Resolver</h3>
-            <span class="chip-badge">ASTROMETRY</span>
+            <h3><span class="accent-dot"></span> Target Search &amp; Astrometric Resolver</h3>
+            <span class="chip-badge">ICRS &bull; SIMBAD</span>
           </div>
           <div class="search-box">
             <div class="input-with-button">
-              <input type="text" id="target-input" placeholder="e.g. WISE 0855, Barnard's Star, or 133.795 -7.245" value="WISE 0855">
+              <input type="text" id="target-input" placeholder="Object name (WISE 0855) or coords (133.795 -7.245 or 08:55:10.83 -07:14:42.5)" value="WISE 0855">
               <button type="button" id="resolve-btn" class="btn btn-secondary">Resolve</button>
             </div>
-            <div id="resolve-status" class="status-callout">Ready for target input</div>
+            <div id="resolve-status" class="status-callout">Ready for target query or custom celestial coordinates</div>
+          </div>
+
+          <!-- Immediate Visual Confirmation Card (Audit Requirement) -->
+          <div id="target-confirmation-card" class="target-confirmation-panel">
+            <div class="confirmation-header">
+              <div class="target-title-wrap">
+                <span id="conf-canonical-id" class="canonical-id">WISE J085510.83-071442.5</span>
+                <span id="conf-provenance-badge" class="provenance-badge provenance-real">[&#10003; REAL / OBSERVED]</span>
+              </div>
+              <span id="conf-source-tag" class="conf-source-tag">SIMBAD J2010.0</span>
+            </div>
+
+            <div class="confirmation-grid">
+              <div class="conf-field">
+                <span class="conf-label">ICRS DECIMAL</span>
+                <strong id="conf-coords-dec" class="conf-val">133.795125&deg;, -7.245147&deg;</strong>
+              </div>
+              <div class="conf-field">
+                <span class="conf-label">SEXAGESIMAL</span>
+                <strong id="conf-coords-sexa" class="conf-val">08h 55m 10.83s, -07&deg; 14' 42.5&quot;</strong>
+              </div>
+              <div class="conf-field">
+                <span class="conf-label">PROPER MOTION (&mu;)</span>
+                <strong id="conf-pm-vector" class="conf-val">&mu;&alpha;* = -8100, &mu;&delta; = +600 mas/yr</strong>
+              </div>
+              <div class="conf-field">
+                <span class="conf-label">TOTAL RATE &bull; PA</span>
+                <strong id="conf-pm-rate" class="conf-val">8.12&quot;/yr &bull; 94.2&deg; (E of N)</strong>
+              </div>
+              <div class="conf-field">
+                <span class="conf-label">BASELINE EPOCH</span>
+                <strong id="conf-epoch-label" class="conf-val">J2010.0 &rarr; Propagated J2025.5</strong>
+              </div>
+              <div class="conf-field">
+                <span class="conf-label">TARGET CLASS</span>
+                <strong id="conf-class-label" class="conf-val">Y/T Brown Dwarf (Coldest Sub-Stellar)</strong>
+              </div>
+            </div>
           </div>
 
           <div class="quick-picks-block">
-            <div class="block-label">CHALLENGE TARGETS:</div>
+            <div class="block-label">CHALLENGE BENCHMARK TARGETS:</div>
             <div class="quick-pick-chips">
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="wise0855">WISE 0855</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="barnard">Barnard's Star</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="epsind">Epsilon Indi B</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="rwaur">RW Aurigae</button>
-              <button type="button" class="btn btn-chip quick-pick-chip" data-target="rdra">R Draconis</button>
+              <button type="button" class="btn btn-chip quick-pick-chip" data-target="wise0855">WISE 0855 (Sub-stellar BD)</button>
+              <button type="button" class="btn btn-chip quick-pick-chip" data-target="barnard">Barnard's Star (Speed Demon)</button>
+              <button type="button" class="btn btn-chip quick-pick-chip" data-target="epsind">Epsilon Indi B (T-Dwarf)</button>
+              <button type="button" class="btn btn-chip quick-pick-chip" data-target="rwaur">RW Aurigae (YSO / Disk)</button>
+              <button type="button" class="btn btn-chip quick-pick-chip" data-target="rdra">R Draconis (Mira Variable)</button>
             </div>
           </div>
         </div>
 
-        <!-- Detector Array Matrix Card (D1 - D6) -->
+        <!-- Detector Array Matrix Card (D1 - D6 Paired by Simultaneous Dichroic Beamsplitters) -->
         <div class="bento-card detector-matrix-card">
           <div class="card-header">
-            <h3><span class="accent-dot magenta"></span> SPHEREx Detector Array</h3>
-            <span class="chip-badge">6 Arrays &bull; 102 Channels</span>
+            <h3><span class="accent-dot"></span> SPHEREx Detector Array &bull; Dichroic Pairs</h3>
+            <span class="chip-badge">3 Dichroic Beams &bull; 6 Bands &bull; 102 Channels</span>
           </div>
-          <p class="card-desc">6 Linear Variable Filter (LVF) detector arrays &bull; 17 channels/array &bull; 0.75 &ndash; 5.00 &mu;m:</p>
-          <div class="detector-grid">
-            <button type="button" class="det-tile det-chip" data-det="1">
-              <span class="det-id">D1</span>
-              <span class="det-range">0.75 - 1.11 &mu;m</span>
-              <span class="det-desc">Near-IR / Optical &bull; Dichroic D4</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="2">
-              <span class="det-id">D2</span>
-              <span class="det-range">1.11 - 1.64 &mu;m</span>
-              <span class="det-desc">J-Band Stellar &bull; Dichroic D5</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="3">
-              <span class="det-id">D3</span>
-              <span class="det-range">1.64 - 2.42 &mu;m</span>
-              <span class="det-desc">H &amp; K Ices &bull; Dichroic D6</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="4">
-              <span class="det-id">D4</span>
-              <span class="det-range">2.42 - 3.82 &mu;m</span>
-              <span class="det-desc">Water Ice &bull; Dichroic D1</span>
-            </button>
-            <button type="button" class="det-tile det-chip active" data-det="5">
-              <span class="det-id">D5</span>
-              <span class="det-range">3.82 - 4.42 &mu;m</span>
-              <span class="det-desc">Thermal Brown Dwarfs &bull; Dichroic D2</span>
-            </button>
-            <button type="button" class="det-tile det-chip" data-det="6">
-              <span class="det-id">D6</span>
-              <span class="det-range">4.42 - 5.00 &mu;m</span>
-              <span class="det-desc">Near/Thermal-IR &bull; Dichroic D3</span>
-            </button>
+          <p class="card-desc">Simultaneous focal planes fed by 3 dichroic beamsplitters (17 spectral channels/array &bull; 0.75 &ndash; 5.00 &mu;m):</p>
+          
+          <div class="dichroic-pairs-container">
+            <!-- Dichroic Pair 1: D1 + D4 -->
+            <div class="dichroic-beam-card">
+              <div class="beam-header">
+                <span class="beam-tag">BEAM 1 (0.75 &ndash; 3.82 &mu;m)</span>
+                <span class="beam-dichroic">Short/Mid Infrared</span>
+              </div>
+              <div class="beam-detectors">
+                <button type="button" class="det-tile det-chip" data-det="1">
+                  <div class="det-top"><span class="det-id">D1</span><span class="det-r">R &approx; 41</span></div>
+                  <span class="det-range">0.75 &ndash; 1.11 &mu;m</span>
+                  <span class="det-desc">Optical / Near-IR Continuum &bull; 17 Channels</span>
+                </button>
+                <button type="button" class="det-tile det-chip" data-det="4">
+                  <div class="det-top"><span class="det-id">D4</span><span class="det-r">R &approx; 35&ndash;41</span></div>
+                  <span class="det-range">2.42 &ndash; 3.82 &mu;m</span>
+                  <span class="det-desc">3.05 &mu;m H2O Ice &amp; Hydrocarbons &bull; 17 Channels</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dichroic Pair 2: D2 + D5 -->
+            <div class="dichroic-beam-card">
+              <div class="beam-header">
+                <span class="beam-tag">BEAM 2 (1.11 &ndash; 4.42 &mu;m)</span>
+                <span class="beam-dichroic">Stellar &amp; Thermal IR</span>
+              </div>
+              <div class="beam-detectors">
+                <button type="button" class="det-tile det-chip" data-det="2">
+                  <div class="det-top"><span class="det-id">D2</span><span class="det-r">R &approx; 41</span></div>
+                  <span class="det-range">1.11 &ndash; 1.64 &mu;m</span>
+                  <span class="det-desc">J-Band Stellar &bull; 1.4 &mu;m H2O &bull; 17 Channels</span>
+                </button>
+                <button type="button" class="det-tile det-chip active" data-det="5">
+                  <div class="det-top"><span class="det-id">D5</span><span class="det-r">R &approx; 130&ndash;150</span></div>
+                  <span class="det-range">3.82 &ndash; 4.42 &mu;m</span>
+                  <span class="det-desc">4.26 &mu;m CO2 &amp; Thermal Brown Dwarfs &bull; 17 Ch</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Dichroic Pair 3: D3 + D6 -->
+            <div class="dichroic-beam-card">
+              <div class="beam-header">
+                <span class="beam-tag">BEAM 3 (1.64 &ndash; 5.00 &mu;m)</span>
+                <span class="beam-dichroic">Ice &amp; Molecular CO</span>
+              </div>
+              <div class="beam-detectors">
+                <button type="button" class="det-tile det-chip" data-det="3">
+                  <div class="det-top"><span class="det-id">D3</span><span class="det-r">R &approx; 41</span></div>
+                  <span class="det-range">1.64 &ndash; 2.42 &mu;m</span>
+                  <span class="det-desc">H &amp; K Ices / Methane Dropouts &bull; 17 Channels</span>
+                </button>
+                <button type="button" class="det-tile det-chip" data-det="6">
+                  <div class="det-top"><span class="det-id">D6</span><span class="det-r">R &approx; 130&ndash;150</span></div>
+                  <span class="det-range">4.42 &ndash; 5.00 &mu;m</span>
+                  <span class="det-desc">4.67 &mu;m CO Gas / Mid-IR Thermal &bull; 17 Channels</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -157,8 +236,19 @@
                 <input type="number" id="dec-input" name="dec" step="0.000001" min="-90" max="90" value="-7.245147" required>
               </div>
               <div class="form-field">
-                <label for="fov-input">Field of View (arcmin)</label>
-                <input type="number" id="fov-input" name="fov" step="0.5" min="1" max="30" value="8.0" required>
+                <div class="field-label-row">
+                  <label for="fov-select">Field of View (FOV)</label>
+                  <span id="fov-transfer-badge" class="fov-transfer-badge">~180 KB</span>
+                </div>
+                <div class="fov-select-wrap">
+                  <select id="fov-select" class="fov-select">
+                    <option value="4">4' &times; 4' (39&times;39 px &bull; High-Zoom)</option>
+                    <option value="8" selected>8' &times; 8' (78&times;78 px &bull; Standard)</option>
+                    <option value="15">15' &times; 15' (146&times;146 px &bull; Survey)</option>
+                    <option value="30">30' &times; 30' (292&times;292 px &bull; Wide Patrol)</option>
+                  </select>
+                  <input type="number" id="fov-input" name="fov" step="0.5" min="1" max="30" value="8.0" required class="hidden">
+                </div>
               </div>
               <div class="form-field">
                 <label for="mode-select">Sequence Mode</label>
@@ -276,6 +366,26 @@
 
         <!-- Column 2: Sky Canvas Player, iOS Toggles & Playback Deck -->
         <div class="studio-center-card">
+          <!-- Primary Dual-Mode Switcher & Pass 1 vs 2 Quick Action -->
+          <div class="studio-mode-bar">
+            <div class="mode-switch-group" role="group" aria-label="Playback Mode">
+              <button type="button" id="btn-mode-time" class="btn-mode-switch active" title="Lock Band D5 (4.12 µm) and animate across 6-Month All-Sky Survey Passes">
+                <span class="mode-icon">&#128337;</span>
+                <span class="mode-text">TIME MOVIE MODE</span>
+                <span class="mode-sub">Const &lambda; (D5 4.12 &mu;m) &bull; Passes 1&ndash;4</span>
+              </button>
+              <button type="button" id="btn-mode-spectral" class="btn-mode-switch" title="Lock Pass 1 Epoch and sweep across 102 SPHEREx Spectral Channels (0.75-5.00 µm)">
+                <span class="mode-icon">&#127752;</span>
+                <span class="mode-text">SPECTRAL SWEEP MODE</span>
+                <span class="mode-sub">Const Epoch &bull; 102 Channels (0.75&ndash;5.00 &mu;m)</span>
+              </button>
+            </div>
+            <button type="button" id="blink-pass12-btn" class="btn-blink-action" title="One-click blink between 6-month baseline Pass 1 and Pass 2 to reveal proper motion &amp; parallax">
+              <span class="action-tag">QUICK BLINK</span>
+              <strong>Pass 1 vs Pass 2 (&Delta;t = 6 mo)</strong>
+            </button>
+          </div>
+
           <!-- Top Overlay Sliding Pill Switches -->
           <div class="studio-toggles-bar">
             <label class="toggle-switch">
@@ -309,6 +419,11 @@
               <span class="toggle-label">NEOSSat</span>
             </label>
             <label class="toggle-switch">
+              <input type="checkbox" id="toggle-pm-track" checked>
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">PM Track</span>
+            </label>
+            <label class="toggle-switch">
               <input type="checkbox" id="toggle-ruler">
               <span class="toggle-slider"></span>
               <span class="toggle-label">Ruler</span>
@@ -317,6 +432,16 @@
               <input type="checkbox" id="toggle-centroid">
               <span class="toggle-slider"></span>
               <span class="toggle-label">Centroid</span>
+            </label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-band-coadd">
+              <span class="toggle-slider"></span>
+              <span class="toggle-label" title="Stack all 17 spectral channels within active detector array using inverse-variance weights for 4.12x SNR boost">Band Co-Add (4.1x)</span>
+            </label>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-diff">
+              <span class="toggle-slider"></span>
+              <span class="toggle-label">Diff (B-A)</span>
             </label>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-invert">
@@ -331,7 +456,7 @@
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-flags">
               <span class="toggle-slider"></span>
-              <span class="toggle-label">Flags</span>
+              <span class="toggle-label" title="SPHEREx bitmask quality flags: Cosmic ray, saturation, diffraction, blending, stray light">Quality Mask</span>
             </label>
 
             <!-- Zoom Buttons -->
@@ -348,6 +473,7 @@
               <canvas id="blink-canvas" width="400" height="400"></canvas>
               <canvas id="flags-canvas" class="flags-overlay-canvas hidden" width="400" height="400"></canvas>
               <canvas id="gaia-canvas" class="gaia-overlay-canvas" width="400" height="400"></canvas>
+              <canvas id="pmtrack-canvas" class="pmtrack-overlay-canvas" width="400" height="400"></canvas>
               <canvas id="ruler-canvas" class="ruler-overlay-canvas" width="400" height="400"></canvas>
               
               <!-- Centroid & Spectrum Pins -->
@@ -367,6 +493,8 @@
             </div>
             <div id="ruler-readout" class="ruler-readout hidden"></div>
             <div id="centroid-readout" class="centroid-readout hidden"></div>
+            <div id="pm-track-readout" class="pm-track-readout hidden"></div>
+            <div id="diff-readout" class="diff-readout hidden"></div>
 
             <div id="canvas-overlay" class="canvas-overlay">
               <span id="meta-mjd">MJD: --</span>
@@ -376,42 +504,52 @@
             </div>
           </div>
 
-          <!-- Playback Deck & Scrub Bar -->
-          <div class="playback-deck">
-            <div class="playback-buttons">
-              <button type="button" id="play-pause-btn" class="btn-deck-icon" title="Play / Pause (Space)" disabled>&gt;</button>
-              <button type="button" id="step-prev-btn" class="btn-deck-icon" title="Step Back (Left Arrow)" disabled>&laquo;</button>
-              <button type="button" id="step-next-btn" class="btn-deck-icon" title="Step Forward (Right Arrow)" disabled>&raquo;</button>
+          <!-- Dedicated Video Player Control Bar ("Like a Little Video") -->
+          <div class="video-player-bar" id="video-player-bar">
+            <div class="player-playback-controls">
+              <button type="button" id="step-prev-btn" class="btn-player-icon" title="Step Back ([ or Left Arrow])">&laquo;</button>
+              <button type="button" id="play-pause-btn" class="btn-player-icon btn-player-primary" title="Play / Pause (Spacebar)">&gt;</button>
+              <button type="button" id="step-next-btn" class="btn-player-icon" title="Step Forward (] or Right Arrow])">&raquo;</button>
             </div>
 
-            <div class="timeline-bar">
-              <input type="range" id="frame-slider" min="0" max="0" value="0" disabled>
-              <span id="frame-counter" class="frame-badge">0 / 0</span>
+            <div class="player-timeline-container">
+              <div class="timeline-slider-row">
+                <input type="range" id="frame-slider" min="0" max="0" value="0" class="video-scrubber" title="Drag to scrub timeline frames">
+                <span id="frame-counter" class="frame-badge">0 / 0</span>
+              </div>
+              <!-- Timeline pass and epoch markers -->
+              <div class="timeline-pass-ticks" id="timeline-pass-ticks">
+                <span class="pass-tick active" title="Pass 1: May-Nov 2025">P1 (May '25)</span>
+                <span class="pass-tick" title="Pass 2: Nov 2025-May 2026">P2 (Nov '25)</span>
+                <span class="pass-tick" title="Pass 3: May-Nov 2026">P3 (May '26)</span>
+                <span class="pass-tick" title="Pass 4: Nov 2026-May 2027">P4 (Nov '26)</span>
+              </div>
             </div>
 
-            <div class="playback-chips">
-              <button type="button" id="blink-mode-btn" class="btn-micro" title="Toggle Time vs Wavelength Blink Mode">Time</button>
-              <button type="button" id="loop-btn" class="btn-micro active" title="Toggle Loop (L)">Loop</button>
-              <button type="button" id="bounce-btn" class="btn-micro" title="Toggle Bounce / Ping-Pong">Bounce</button>
+            <div class="player-options-strip">
+              <button type="button" id="loop-btn" class="btn-micro active" title="Continuous Loop (1 -> N -> 1)">Loop</button>
+              <button type="button" id="bounce-btn" class="btn-micro" title="Bounce / Ping-Pong (1 -> N -> 1)">Bounce</button>
+              <button type="button" id="blink-mode-btn" class="btn-micro hidden" title="Legacy toggle">Mode</button>
               <label for="speed-select" class="fps-label">FPS:
                 <select id="speed-select" class="micro-select">
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="4" selected>4</option>
-                  <option value="8">8</option>
-                  <option value="12">12</option>
-                  <option value="15">15</option>
+                  <option value="1">0.5x</option>
+                  <option value="2">1.0x</option>
+                  <option value="4" selected>2.0x</option>
+                  <option value="8">4.0x</option>
                 </select>
               </label>
             </div>
           </div>
 
-          <!-- A/B Comparison & Image Subtraction Toolbar -->
+          <!-- A/B Comparison, Temporal Arithmetic & Discovery Export Toolbar -->
           <div class="ab-deck">
-            <button type="button" id="set-frame-a-btn" class="btn-ab" title="Set current frame as reference Frame A">Set A</button>
-            <button type="button" id="set-frame-b-btn" class="btn-ab" title="Set current frame as comparison Frame B">Set B</button>
+            <button type="button" id="set-frame-a-btn" class="btn-ab" title="Set current frame as reference Frame A (Pass 1)">Set A</button>
+            <button type="button" id="set-frame-b-btn" class="btn-ab" title="Set current frame as comparison Frame B (Pass 2)">Set B</button>
             <button type="button" id="blink-ab-btn" class="btn-ab" title="Blink exclusively between Frame A and Frame B">Blink A/B</button>
-            <button type="button" id="diff-ab-btn" class="btn-ab" title="Toggle Difference Image (B - A)">Diff (B-A)</button>
+            <button type="button" id="diff-ab-btn" class="btn-ab" title="Toggle Dipole Difference Image (B - A)">Diff (B&minus;A)</button>
+            <button type="button" id="sum-ab-btn" class="btn-ab" title="Temporal Co-Add (A + B) - stacks epochs to reveal faint static background stars while smearing fast movers">Sum (A+B)</button>
+            <button type="button" id="median-stack-btn" class="btn-ab" title="Multi-Epoch Median Stack - rejects cosmic rays and transient asteroids to isolate static celestial background">Median Stack</button>
+            <button type="button" id="export-flipbook-btn" class="btn-ab btn-ab-export" title="Export Discovery Flipbook WebM clip with stamped reticle &amp; coordinates">&#127916; Export Video</button>
             <button type="button" id="export-gif-btn" class="btn-ab" title="Export animated GIF">&#128190; GIF</button>
             <button type="button" id="export-fits-btn" class="btn-ab" title="Export scientific FITS">&#128190; FITS</button>
             <span id="ab-status" class="ab-pill">A: #1 &bull; B: #2</span>
@@ -424,16 +562,46 @@
             <div class="spectrum-header">
               <div>
                 <h4>SPECTRUM &amp; LIGHT CURVE</h4>
-                <div id="spectrum-coords-text" class="sub-label">Click sky pixel to extract multi-band SED</div>
+                <div id="spectrum-coords-text" class="sub-label">Click sky pixel to extract 102-channel SED (0.75&ndash;5.00 &mu;m)</div>
               </div>
               <div class="spectrum-controls">
-                <select id="spectrum-radius-select" class="micro-select">
+                <select id="spectrum-radius-select" class="micro-select" title="Extraction aperture radius">
                   <option value="1" selected>1 px</option>
                   <option value="2">3x3</option>
                   <option value="3">5x5</option>
                 </select>
                 <button type="button" id="spectrum-mode-btn" class="btn-micro" title="Toggle SED vs Light Curve">View: SED</button>
               </div>
+            </div>
+
+            <!-- Molecular Fingerprints Toggle Bar -->
+            <div class="molecular-fingerprints-bar">
+              <span class="mol-label">MOLECULAR BANDS:</span>
+              <div class="mol-chips">
+                <button type="button" id="mol-h2o" class="btn-micro mol-chip" data-mol="h2o" title="Water Ice &amp; Vapor: 1.4, 1.9, 2.8 µm">H&#8322;O</button>
+                <button type="button" id="mol-ch4" class="btn-micro mol-chip active" data-mol="ch4" title="Methane &amp; Collision-Induced H2: 1.15, 1.65, 2.3, 3.3 µm">CH&#8324; / H&#8322;</button>
+                <button type="button" id="mol-co2" class="btn-micro mol-chip" data-mol="co2" title="Carbon Dioxide: 2.03, 4.26 µm (Band D5)">CO&#8322;</button>
+                <button type="button" id="mol-co" class="btn-micro mol-chip" data-mol="co" title="Carbon Monoxide: 2.34, 4.67 µm (Band D6)">CO</button>
+              </div>
+            </div>
+
+            <!-- Spectral Template Matcher & De-Blend Inspector Strip -->
+            <div class="spectrum-tools-strip">
+              <div class="template-matcher-field">
+                <label for="template-select" class="tool-label">TEMPLATE:</label>
+                <select id="template-select" class="micro-select template-select">
+                  <option value="none">None (Raw Aperture)</option>
+                  <option value="brown_dwarf" selected>Y/T Brown Dwarf (Methane/Water)</option>
+                  <option value="comet">Active Comet Coma (CO/CO2/H2O)</option>
+                  <option value="quasar">Redshifted Quasar (Emission Lines)</option>
+                  <option value="mdwarf">M-Dwarf Low-Mass Star</option>
+                </select>
+              </div>
+              <label class="toggle-switch deblend-switch" title="Highlight potential 6.15 arcsec pixel blending">
+                <input type="checkbox" id="toggle-deblend">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">De-Blend</span>
+              </label>
             </div>
 
             <!-- Spectrum Canvas -->
@@ -453,6 +621,34 @@
               <span id="spectrum-sonification-hint">Pitch &prop; flux &bull; Web Audio API</span>
             </div>
           </div>
+
+          <!-- Astrometric Motion & Sub-Pixel Drift Plot (Section 4 upgrade) -->
+          <div id="drift-section" class="drift-panel">
+            <div class="drift-header">
+              <div>
+                <h4>ASTROMETRIC MOTION &amp; DRIFT</h4>
+                <div id="drift-sub-label" class="sub-label">5&times;5 Centroid Aperture vs SIMBAD Catalog PM</div>
+              </div>
+              <div class="drift-controls">
+                <button type="button" id="centroid-all-frames-btn" class="btn-micro" title="Run 5x5 centroid across all 12 frames">&#9881; Re-Centroid</button>
+                <button type="button" id="export-drift-csv-btn" class="btn-micro" title="Export astrometric drift measurements to CSV">CSV</button>
+              </div>
+            </div>
+
+            <div class="drift-readout-strip">
+              <div class="drift-stat"><span>MEASURED:</span> <strong id="drift-measured-rate">--</strong></div>
+              <div class="drift-stat"><span>SIMBAD:</span> <strong id="drift-catalog-rate">--</strong></div>
+              <div class="drift-stat"><span>RESIDUAL:</span> <strong id="drift-residual">--</strong></div>
+            </div>
+
+            <div class="drift-canvas-wrap">
+              <canvas id="drift-canvas" width="340" height="140"></canvas>
+            </div>
+
+            <div class="drift-footer-info">
+              <span id="drift-status-text">Centroid: &Delta;&theta; [arcsec] across 12 epochs &bull; Red: Meas, Cyan: SIMBAD</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -464,10 +660,24 @@
       <div class="aladin-bento">
         <div class="aladin-top-bar">
           <div class="aladin-info">
-            <h3><span class="accent-dot"></span> Aladin Lite Multi-Survey Sky Context</h3>
-            <span class="sub-label">Compare SPHEREx field coordinates with CDS Sky Surveys (2MASS / AllWISE / DSS2)</span>
+            <div class="aladin-title-row">
+              <h3><span class="accent-dot"></span> Aladin Lite Multi-Survey Sky Context</h3>
+              <!-- Shared Target Chip Header -->
+              <div class="aladin-target-chip" id="aladin-target-chip">
+                <span class="chip-label">TARGET:</span>
+                <strong id="aladin-target-name">WISE J085510.83-071442.5</strong>
+                <span class="chip-coords" id="aladin-target-coords">133.7951° -7.2451° (J2000)</span>
+                <span class="provenance-badge provenance-real" title="CDS Aladin Survey Data">[&#10003; REAL CDS]</span>
+              </div>
+            </div>
+            <span class="sub-label">Synchronized CDS Multi-Wavelength Survey Views (2MASS / AllWISE / DSS2 / Gaia DR3) &bull; Dynamic SPHEREx 8' FOV</span>
           </div>
           <div class="aladin-actions">
+            <div class="aladin-layer-toggles">
+              <button type="button" id="btn-toggle-simbad" class="btn-micro active" title="Toggle SIMBAD Catalog Overlay">SIMBAD</button>
+              <button type="button" id="btn-toggle-wise" class="btn-micro active" title="Toggle AllWISE Overlay">AllWISE</button>
+              <button type="button" id="btn-toggle-spherex-fov" class="btn-micro active" title="Toggle SPHEREx 8' FOV Footprint">SPHEREx 8' FOV</button>
+            </div>
             <button type="button" id="toggle-aladin-btn" class="btn btn-primary-gradient">Refresh Sky Context</button>
           </div>
         </div>
@@ -477,24 +687,38 @@
         </div>
 
         <div class="aladin-cards-row">
-          <div class="context-card">
-            <strong>Gaia DR3 (J2016.0)</strong>
-            <p id="card-gaia-desc">Optical astrometric baseline with proper motion vectors.</p>
+          <div class="context-card" id="card-gaia">
+            <div class="card-title-row">
+              <strong>Gaia DR3 (J2016.0)</strong>
+              <span class="provenance-badge provenance-real">[&#10003; REAL]</span>
+            </div>
+            <p id="card-gaia-desc">Optical astrometric baseline with proper motion vectors and sub-milliarcsecond parallax precision.</p>
+            <div id="gaia-undetected-badge" class="gaia-undetected-badge hidden">
+              <span class="badge-icon">&#9888;</span>
+              <strong>Undetected in Gaia (G &gt; 21 mag limit)</strong>
+              <p>Object is an ultra-cool Y/T brown dwarf emitting almost purely in thermal infrared (&gt;3.5 &mu;m). Completely invisible in optical surveys!</p>
+            </div>
           </div>
-          <div class="context-card">
-            <strong>AllWISE (2010 Epoch)</strong>
-            <p id="card-wise-desc">15-year historical infrared baseline (W1-W4) for orbital shift verification.</p>
+          <div class="context-card" id="card-wise">
+            <div class="card-title-row">
+              <strong>AllWISE (2010 Epoch)</strong>
+              <span class="provenance-badge provenance-real">[&#10003; REAL]</span>
+            </div>
+            <p id="card-wise-desc">15-year historical infrared baseline (W1-W4) essential for detecting high proper motion brown dwarfs and cold movers.</p>
           </div>
-          <div class="context-card">
-            <strong>CADC NEOSSat</strong>
-            <p id="card-neossat-desc">Near-Earth orbit fast-moving asteroid and satellite cross-matches.</p>
+          <div class="context-card" id="card-neossat">
+            <div class="card-title-row">
+              <strong>CADC NEOSSat &amp; MPC</strong>
+              <span class="provenance-badge provenance-real">[&#10003; REAL]</span>
+            </div>
+            <p id="card-neossat-desc">Near-Earth orbit fast-moving asteroid, comet coma, and satellite orbital track cross-matches.</p>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ============================================================== -->
-    <!-- SECTION 4: CITIZEN SCIENCE LAB (Discovery Logger, Ruler, Tour) -->
+    <!-- SECTION 4: CITIZEN SCIENCE LAB (Candidate Observation Log)    -->
     <!-- ============================================================== -->
     <section id="view-lab" class="hud-section" aria-labelledby="tab-lab">
       <div class="lab-bento">
@@ -502,28 +726,87 @@
         <div id="candidate-section" class="bento-card candidate-card">
           <div class="card-header">
             <div>
-              <h3><span class="accent-dot magenta"></span> Citizen Science Discovery Logger</h3>
-              <p class="card-desc">Log candidate Planet X bodies, fast-moving asteroids, or infrared variables:</p>
+              <h3><span class="accent-dot magenta"></span> Candidate Observation Log (Backyard Worlds Protocol)</h3>
+              <p class="card-desc">Log candidate moving brown dwarfs, solar system movers, variables, or transients:</p>
             </div>
             <button type="button" id="close-candidate-btn" class="btn-micro" aria-label="Close Candidate Logger">&times;</button>
           </div>
 
+          <!-- De-Blend & High-Res Inspection Banner -->
+          <div id="deblend-inspector-box" class="deblend-alert-card hidden">
+            <div class="deblend-header">
+              <span class="deblend-warning-icon">&#9888;</span>
+              <strong>Aperture De-Blend Warning:</strong>
+              <span>Multiple potential sources within SPHEREx 6.15"/px resolution element.</span>
+            </div>
+            <div class="deblend-body">
+              <span>Cross-check with high-resolution AllWISE / Pan-STARRS in Aladin tab before advancing candidate ladder.</span>
+            </div>
+          </div>
+
           <form id="candidate-form" class="candidate-form-grid">
             <div class="form-field">
-              <label for="cand-name">Observer / Object Name</label>
-              <input type="text" id="cand-name" placeholder="e.g. PX-Candidate-01" required>
+              <label for="cand-name">Candidate Name / ID</label>
+              <input type="text" id="cand-name" placeholder="e.g. SPX-BD-2026-01" required>
             </div>
             <div class="form-field">
-              <label for="cand-class">Classification</label>
+              <label for="cand-class">Classification Taxonomy</label>
               <select id="cand-class">
-                <option value="Planet X Candidate" selected>Planet X Candidate</option>
-                <option value="Brown Dwarf">Brown Dwarf</option>
-                <option value="Near-Earth Asteroid">Near-Earth Asteroid</option>
-                <option value="Variable Star">Variable Star</option>
-                <option value="Transient / Flare">Transient / Flare</option>
-                <option value="Other">Other</option>
+                <option value="Moving Substellar Object (Y/T/L Brown Dwarf)" selected>Moving Substellar Object (Y/T/L Brown Dwarf)</option>
+                <option value="Solar System Mover (Asteroid / Comet with CO/CO2/H2O)">Solar System Mover (Asteroid / Comet with CO/CO2/H2O)</option>
+                <option value="Variable Source (Quasar / AGN / Cepheid)">Variable Source (Quasar / AGN / Cepheid)</option>
+                <option value="Transient Event (Supernova / Tidal Disruption)">Transient Event (Supernova / Tidal Disruption)</option>
+                <option value="Blended / Overlapping Source (Needs High-Res De-blending)">Blended / Overlapping Source (Needs High-Res De-blending)</option>
               </select>
             </div>
+
+            <!-- 4-Step Candidate Status Ladder -->
+            <div class="form-field form-field-full">
+              <label>Candidate Status Ladder:</label>
+              <div class="status-ladder" id="candidate-status-ladder">
+                <div class="ladder-step active" data-step="1">
+                  <span class="step-num">1</span>
+                  <span class="step-label">Logged</span>
+                </div>
+                <div class="ladder-step" data-step="2">
+                  <span class="step-num">2</span>
+                  <span class="step-label">Self-Checked</span>
+                </div>
+                <div class="ladder-step" data-step="3">
+                  <span class="step-num">3</span>
+                  <span class="step-label">Needs Review</span>
+                </div>
+                <div class="ladder-step" data-step="4">
+                  <span class="step-num">4</span>
+                  <span class="step-label">Confirmed</span>
+                </div>
+              </div>
+              <input type="hidden" id="cand-status-step" value="1">
+            </div>
+
+            <!-- Self-Check Verification Checklist -->
+            <div class="form-field form-field-full verification-checklist-card">
+              <label class="checklist-title">Self-Check Verification Checklist (Required for Step 2+):</label>
+              <div class="checklist-grid">
+                <label class="check-item">
+                  <input type="checkbox" id="check-frames-motion">
+                  <span>&ge;3 Frames Motion Verified</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="check-simbad">
+                  <span>SIMBAD Cross-Match Checked</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="check-wise">
+                  <span>AllWISE (2010) Baseline Checked</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="check-neossat">
+                  <span>NEOSSat / MPC Ephemeris Checked</span>
+                </label>
+              </div>
+            </div>
+
             <div class="form-field">
               <label for="cand-ra">Right Ascension (&deg;)</label>
               <input type="number" id="cand-ra" step="0.000001" required>
@@ -540,13 +823,33 @@
               <label for="cand-pa">Position Angle (&deg; E of N)</label>
               <input type="number" id="cand-pa" step="0.1" value="0.0">
             </div>
+
+            <!-- Uncertainty & SNR Metrics -->
+            <div class="form-field">
+              <label for="cand-pos-err">Pos. Uncertainty (&plusmn; arcsec)</label>
+              <input type="number" id="cand-pos-err" step="0.01" value="0.25">
+            </div>
+            <div class="form-field">
+              <label for="cand-pm-err">PM Uncertainty (&plusmn; mas/yr)</label>
+              <input type="number" id="cand-pm-err" step="1" value="15">
+            </div>
+            <div class="form-field">
+              <label for="cand-snr">Estimated SNR</label>
+              <input type="number" id="cand-snr" step="0.1" value="14.2">
+            </div>
+            <div class="form-field">
+              <label for="cand-flux-trend">Flux Variability (&Delta;%)</label>
+              <input type="number" id="cand-flux-trend" step="0.1" value="3.5">
+            </div>
+
             <div class="form-field form-field-full">
-              <label for="cand-notes">Observational Notes</label>
-              <input type="text" id="cand-notes" placeholder="e.g. Motion detected between Frame 1 and 4 in D5" maxlength="256">
+              <label for="cand-notes">Observational Notes &amp; Molecular Absorption Remarks</label>
+              <input type="text" id="cand-notes" placeholder="e.g. Significant motion across Pass 1-4; prominent 1.65 µm and 3.3 µm CH4 dropouts" maxlength="256">
             </div>
             <div class="form-actions-full">
-              <button type="submit" id="save-candidate-btn" class="btn btn-primary-gradient">&#128206; Save Discovery Finding</button>
-              <button type="button" id="export-candidates-btn" class="btn btn-glass">&#128190; Export JSON</button>
+              <button type="submit" id="save-candidate-btn" class="btn btn-primary-gradient">&#128206; Save Candidate Log</button>
+              <button type="button" id="export-zooniverse-btn" class="btn btn-glass" title="Export Backyard Worlds / Zooniverse Discovery Packet (JSON &amp; CSV)">&#128190; Export Discovery Packet</button>
+              <button type="button" id="export-candidates-btn" class="btn btn-glass hidden">&#128190; Export JSON</button>
               <span id="candidate-status" class="candidate-status"></span>
             </div>
           </form>
@@ -563,7 +866,16 @@
         <!-- Frame Quality Metadata Table -->
         <div id="table-section" class="bento-card table-card">
           <div class="card-header">
-            <h3><span class="accent-dot cyan"></span> Frame Quality Metadata</h3>
+            <div>
+              <h3><span class="accent-dot cyan"></span> Frame Quality &amp; SPHEREx Bitmask Telemetry</h3>
+              <div class="bitmask-legend-strip">
+                <span class="bit-tag bit-0" title="Bit 0 (0x01): Cosmic Ray Hit">B0: CR Hit</span>
+                <span class="bit-tag bit-1" title="Bit 1 (0x02): Detector Saturation">B1: Saturation</span>
+                <span class="bit-tag bit-2" title="Bit 2 (0x04): Ghost / Diffraction Spike">B2: Ghost</span>
+                <span class="bit-tag bit-3" title="Bit 3 (0x08): Source Blending &lt; 12.3&quot;">B3: Blended</span>
+                <span class="bit-tag bit-4" title="Bit 4 (0x10): High Stray / Zodi Light">B4: Zodi</span>
+              </div>
+            </div>
             <span id="truncation-notice" class="chip-badge hidden">TRUNCATED</span>
           </div>
           <div class="table-scroll-wrap">

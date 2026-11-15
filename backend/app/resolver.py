@@ -28,6 +28,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 269.452083,
         "dec": 4.693361,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": -798.58,
         "pm_dec_mas_yr": 10328.12,
         "ra_now": 269.44633,
@@ -40,6 +41,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 133.795125,
         "dec": -7.245147,
         "catalog_epoch": "J2010.0",
+        "epoch0": 2010.0,
         "pm_ra_mas_yr": -8100.0,
         "pm_dec_mas_yr": 600.0,
         "ra_now": 133.75913,
@@ -52,6 +54,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 330.26042,
         "dec": -56.78917,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": 3961.0,
         "pm_dec_mas_yr": -2539.0,
         "ra_now": 330.3072,
@@ -64,6 +67,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 330.26042,
         "dec": -56.78917,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": 3961.0,
         "pm_dec_mas_yr": -2539.0,
         "ra_now": 330.3072,
@@ -76,6 +80,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 76.70958,
         "dec": 30.40139,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": 1.5,
         "pm_dec_mas_yr": -20.0,
         "ra_now": 76.7096,
@@ -88,6 +93,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 76.70958,
         "dec": 30.40139,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": 1.5,
         "pm_dec_mas_yr": -20.0,
         "ra_now": 76.7096,
@@ -100,6 +106,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 248.34167,
         "dec": 66.70472,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": 12.0,
         "pm_dec_mas_yr": -18.0,
         "ra_now": 248.3421,
@@ -112,6 +119,7 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "ra": 248.34167,
         "dec": 66.70472,
         "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
         "pm_ra_mas_yr": 12.0,
         "pm_dec_mas_yr": -18.0,
         "ra_now": 248.3421,
@@ -119,7 +127,96 @@ KNOWN_TARGETS: dict[str, dict[str, Any]] = {
         "target_epoch": settings.target_epoch,
         "source": "SIMBAD (offline catalog)",
     },
+    "luhman 16": {
+        "query": "Luhman 16",
+        "ra": 162.32875,
+        "dec": -53.31944,
+        "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
+        "pm_ra_mas_yr": -2759.0,
+        "pm_dec_mas_yr": 357.0,
+        "ra_now": 162.2785,
+        "dec_now": -53.3168,
+        "target_epoch": settings.target_epoch,
+        "source": "SIMBAD (offline catalog)",
+    },
+    "proxima centauri": {
+        "query": "Proxima Centauri",
+        "ra": 217.428938,
+        "dec": -62.679492,
+        "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
+        "pm_ra_mas_yr": -3775.75,
+        "pm_dec_mas_yr": 765.54,
+        "ra_now": 217.3035,
+        "dec_now": -62.6739,
+        "target_epoch": settings.target_epoch,
+        "source": "SIMBAD (offline catalog)",
+    },
+    "teegarden's star": {
+        "query": "Teegarden's Star",
+        "ra": 43.25379,
+        "dec": 16.88127,
+        "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
+        "pm_ra_mas_yr": 3436.5,
+        "pm_dec_mas_yr": -3804.8,
+        "ra_now": 43.2801,
+        "dec_now": 16.8537,
+        "target_epoch": settings.target_epoch,
+        "source": "SIMBAD (offline catalog)",
+    },
+    "wolf 359": {
+        "query": "Wolf 359",
+        "ra": 164.12025,
+        "dec": 7.01467,
+        "catalog_epoch": "J2000.0",
+        "epoch0": 2000.0,
+        "pm_ra_mas_yr": -3842.0,
+        "pm_dec_mas_yr": -2724.0,
+        "ra_now": 164.0924,
+        "dec_now": 6.9949,
+        "target_epoch": settings.target_epoch,
+        "source": "SIMBAD (offline catalog)",
+    },
 }
+
+
+def parse_epoch_decimal(epoch_val: Any) -> float:
+    """Parse a catalog epoch string (e.g. 'J2000.0', 'J2010.0', '2016.0') to float decimal year."""
+    if isinstance(epoch_val, (int, float)):
+        return float(epoch_val)
+    if isinstance(epoch_val, str):
+        cleaned = epoch_val.strip().upper().replace("J", "").replace("B", "")
+        try:
+            return float(cleaned)
+        except ValueError:
+            pass
+    return 2000.0
+
+
+def to_sexagesimal(ra_deg: float, dec_deg: float) -> tuple[str, str]:
+    """Convert decimal coordinates to sexagesimal strings using astropy SkyCoord with fallback."""
+    try:
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
+        sc = SkyCoord(ra=ra_deg * u.deg, dec=dec_deg * u.deg, frame="icrs")
+        s = sc.to_string("hmsdms", precision=2).split()
+        return s[0], s[1]
+    except Exception:
+        hours = ((ra_deg / 15.0) % 24.0 + 24.0) % 24.0
+        h = int(hours)
+        m = int((hours - h) * 60.0)
+        sec = round((hours - h - m / 60.0) * 3600.0, 2)
+        ra_str = f"{h:02d}h{m:02d}m{sec:05.2f}s"
+
+        sign = "-" if dec_deg < 0 else "+"
+        abs_dec = abs(dec_deg)
+        d = int(abs_dec)
+        dm = int((abs_dec - d) * 60.0)
+        dsec = round((abs_dec - d - dm / 60.0) * 3600.0, 1)
+        dec_str = f"{sign}{d:02d}d{dm:02d}m{dsec:04.1f}s"
+        return ra_str, dec_str
 
 
 def propagate_position(
@@ -130,26 +227,35 @@ def propagate_position(
     catalog_epoch_str: str = "J2000.0",
     target_epoch_str: str = "J2026.0",
 ) -> tuple[float, float]:
-    """Propagate ICRS coordinates from catalog epoch to target epoch using proper motion."""
-    import astropy.units as u
-    from astropy.coordinates import SkyCoord
-    from astropy.time import Time
+    """Propagate ICRS coordinates from catalog epoch to target epoch using astropy SkyCoord & proper motion."""
+    cat_ep = parse_epoch_decimal(catalog_epoch_str)
+    tgt_ep = parse_epoch_decimal(target_epoch_str)
+    try:
+        import astropy.units as u
+        from astropy.coordinates import SkyCoord
+        from astropy.time import Time
 
-    cat_time = Time(catalog_epoch_str)
-    target_time = Time(target_epoch_str)
-    dt_yr = (target_time.decimalyear - cat_time.decimalyear)
+        cat_time = Time(cat_ep, format="decimalyear")
+        target_time = Time(tgt_ep, format="decimalyear")
 
-    coord = SkyCoord(
-        ra=ra * u.deg,
-        dec=dec * u.deg,
-        pm_ra_cosdec=pm_ra_mas_yr * u.mas / u.yr,
-        pm_dec=pm_dec_mas_yr * u.mas / u.yr,
-        obstime=cat_time,
-    )
-
-    # Apply motion
-    propagated = coord.apply_space_motion(new_obstime=target_time)
-    return round(float(propagated.ra.deg), 6), round(float(propagated.dec.deg), 6)
+        coord = SkyCoord(
+            ra=ra * u.deg,
+            dec=dec * u.deg,
+            pm_ra_cosdec=pm_ra_mas_yr * u.mas / u.yr,
+            pm_dec=pm_dec_mas_yr * u.mas / u.yr,
+            obstime=cat_time,
+            frame="icrs",
+        )
+        propagated = coord.apply_space_motion(new_obstime=target_time)
+        return round(float(propagated.ra.deg), 6), round(float(propagated.dec.deg), 6)
+    except Exception as e:
+        import math
+        logger.debug("Astropy space motion propagation fallback used: %s", e)
+        dt = tgt_ep - cat_ep
+        cos_dec = math.cos(math.radians(dec)) or 1.0
+        ra_p = ra + (pm_ra_mas_yr * dt) / (3600000.0 * cos_dec)
+        dec_p = dec + (pm_dec_mas_yr * dt) / 3600000.0
+        return round(ra_p % 360.0, 6), round(max(-90.0, min(90.0, dec_p)), 6)
 
 
 def resolve_object_name(name: str) -> dict[str, Any]:
@@ -171,7 +277,10 @@ def resolve_object_name(name: str) -> dict[str, Any]:
 
     # Check offline / fallback targets
     if cache_key in KNOWN_TARGETS:
-        res = KNOWN_TARGETS[cache_key]
+        res = dict(KNOWN_TARGETS[cache_key])
+        ra_sex, dec_sex = to_sexagesimal(res["ra"], res["dec"])
+        res["ra_sexagesimal"] = ra_sex
+        res["dec_sexagesimal"] = dec_sex
         resolve_cache[cache_key] = res
         return res
 
@@ -207,11 +316,15 @@ def resolve_object_name(name: str) -> dict[str, Any]:
                     target_epoch_str=settings.target_epoch,
                 )
 
+            ra_sex, dec_sex = to_sexagesimal(ra_deg, dec_deg)
             result = {
                 "query": clean_name,
                 "ra": round(ra_deg, 6),
                 "dec": round(dec_deg, 6),
+                "ra_sexagesimal": ra_sex,
+                "dec_sexagesimal": dec_sex,
                 "catalog_epoch": "J2000.0",
+                "epoch0": 2000.0,
                 "pm_ra_mas_yr": round(pm_ra, 2) if pm_ra is not None else None,
                 "pm_dec_mas_yr": round(pm_dec, 2) if pm_dec is not None else None,
                 "ra_now": ra_now,
@@ -229,12 +342,26 @@ def resolve_object_name(name: str) -> dict[str, Any]:
     try:
         from astropy.coordinates import SkyCoord
         sc = SkyCoord.from_name(clean_name)
+        ra_deg = float(sc.ra.deg)
+        dec_deg = float(sc.dec.deg)
+        ra_sex, dec_sex = to_sexagesimal(ra_deg, dec_deg)
         result = {
             "query": clean_name,
-            "ra": round(float(sc.ra.deg), 6),
-            "dec": round(float(sc.dec.deg), 6),
-            "catalog_epoch": None,
+            "ra": round(ra_deg, 6),
+            "dec": round(dec_deg, 6),
+            "ra_sexagesimal": ra_sex,
+            "dec_sexagesimal": dec_sex,
+            "catalog_epoch": "J2000.0",
+            "epoch0": 2000.0,
             "pm_ra_mas_yr": None,
+            "pm_dec_mas_yr": None,
+            "ra_now": None,
+            "dec_now": None,
+            "target_epoch": settings.target_epoch,
+            "source": "Sesame",
+        }
+        resolve_cache[cache_key] = result
+        return result
             "pm_dec_mas_yr": None,
             "ra_now": None,
             "dec_now": None,

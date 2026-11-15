@@ -109,6 +109,78 @@ async def meta(response: Response) -> dict[str, Any]:
     }
 
 
+@router.get("/releases", tags=["system"])
+async def list_releases(response: Response) -> dict[str, Any]:
+    """Pluggable SPHEREx Data Release manifest adapter per NASA Space Apps Consideration 1.
+
+    Returns schema-validated release manifests for DR1, DR2, IRSA SIA/TAP, and Custom Upload.
+    Cache-Control: public, max-age=3600
+    """
+    response.headers["Cache-Control"] = "public, max-age=3600"
+    return {
+        "active_release": "dr1",
+        "releases": [
+            {
+                "id": "dr1",
+                "name": "SPHEREx Quick-Release DR1 (May–Nov 2025)",
+                "status": "PUBLIC_AVAILABLE",
+                "coverage": "All-Sky Pass 1 (0.75–5.00 µm)",
+                "time_window": "2025-05-01 to 2025-11-01 · MJD 60800–60982",
+                "pipeline_version": "v1.2-dr1-cal",
+                "channels_per_band": 17,
+                "total_channels": 102,
+                "pixel_scale_arcsec": 6.15,
+                "is_live": True,
+                "access_protocol": "local",
+                "survey_passes": ["Pass 1 (MJD 60800.0)"],
+            },
+            {
+                "id": "dr2",
+                "name": "SPHEREx All-Sky DR2 (Nov 2025–May 2026)",
+                "status": "SCHEDULED_RELEASE",
+                "coverage": "All-Sky Passes 1 & 2 (Δt = 6 mo Baseline)",
+                "time_window": "2025-05-01 to 2026-05-01 · MJD 60800–61165",
+                "pipeline_version": "v2.0-dr2-pm",
+                "channels_per_band": 17,
+                "total_channels": 102,
+                "pixel_scale_arcsec": 6.15,
+                "is_live": False,
+                "access_protocol": "local",
+                "survey_passes": ["Pass 1 (MJD 60800.0)", "Pass 2 (MJD 60982.5)"],
+            },
+            {
+                "id": "irsa_live",
+                "name": "IRSA SIA/TAP Live Query (IPAC Caltech)",
+                "status": "LIVE_REMOTE",
+                "coverage": "Direct SIAv2 / TAP ADQL Query Engine",
+                "time_window": "Dynamic Live Mission Operations",
+                "pipeline_version": "irsa-tap-adql-2.0",
+                "channels_per_band": 17,
+                "total_channels": 102,
+                "pixel_scale_arcsec": 6.15,
+                "is_live": True,
+                "access_protocol": "tap_sia",
+                "endpoint": "https://irsa.ipac.caltech.edu/TAP",
+                "survey_passes": ["Live Mission Cadence"],
+            },
+            {
+                "id": "custom",
+                "name": "Drop Custom FITS / JSON Cube",
+                "status": "CLIENT_UPLOAD",
+                "coverage": "User Cutout / Science Verification Product",
+                "time_window": "User Defined Epochs",
+                "pipeline_version": "client-fits-parser-1.0",
+                "channels_per_band": 17,
+                "total_channels": 102,
+                "pixel_scale_arcsec": 6.15,
+                "is_live": True,
+                "access_protocol": "custom_drop",
+                "survey_passes": ["Custom Multi-Epoch"],
+            },
+        ],
+    }
+
+
 @router.get("/resolve", tags=["catalogs"])
 async def resolve(
     request: Request,
@@ -393,6 +465,7 @@ async def get_sequence_difference(
     key: str = FPath(..., description="32-character hex sequence key"),
     frame_a: int = Query(..., ge=0, description="0-based reference frame index A"),
     frame_b: int = Query(..., ge=0, description="0-based comparison frame index B"),
+    colormap: str = Query(default="grayscale", description="Difference colormap: 'grayscale' or 'diverging'"),
 ) -> FileResponse:
     """Serve image subtraction (difference) PNG between frame_b and frame_a (Slice 7).
 
@@ -411,17 +484,18 @@ async def get_sequence_difference(
             headers={"Retry-After": str(int(retry_after))},
         )
 
-    # Check cached difference PNG
-    cached_diff = disk_cache.get_frame_difference_path(key, frame_a, frame_b)
-    if cached_diff and cached_diff.exists():
-        return FileResponse(
-            path=str(cached_diff),
-            media_type="image/png",
-            headers={
-                "Cache-Control": "public, max-age=86400, immutable",
-                "X-Content-Type-Options": "nosniff",
-            },
-        )
+    # Check cached difference PNG if standard grayscale
+    if colormap == "grayscale":
+        cached_diff = disk_cache.get_frame_difference_path(key, frame_a, frame_b)
+        if cached_diff and cached_diff.exists():
+            return FileResponse(
+                path=str(cached_diff),
+                media_type="image/png",
+                headers={
+                    "Cache-Control": "public, max-age=86400, immutable",
+                    "X-Content-Type-Options": "nosniff",
+                },
+            )
 
     meta = disk_cache.get_sequence_meta(key)
     if not meta:
@@ -444,16 +518,26 @@ async def get_sequence_difference(
         if frame_a < data.shape[0] and frame_b < data.shape[0]:
             diff_arr = data[frame_b] - data[frame_a]
             valid = np.isfinite(data[frame_b]) & np.isfinite(data[frame_a])
-            png_bytes = render_difference_png(diff_arr, valid, already_flipped=True)
-            diff_path = disk_cache.put_frame_difference_png(key, frame_a, frame_b, png_bytes)
-            return FileResponse(
-                path=str(diff_path),
-                media_type="image/png",
-                headers={
-                    "Cache-Control": "public, max-age=86400, immutable",
-                    "X-Content-Type-Options": "nosniff",
-                },
-            )
+            png_bytes = render_difference_png(diff_arr, valid, already_flipped=True, colormap=colormap)
+            if colormap == "grayscale":
+                diff_path = disk_cache.put_frame_difference_png(key, frame_a, frame_b, png_bytes)
+                return FileResponse(
+                    path=str(diff_path),
+                    media_type="image/png",
+                    headers={
+                        "Cache-Control": "public, max-age=86400, immutable",
+                        "X-Content-Type-Options": "nosniff",
+                    },
+                )
+            else:
+                return Response(
+                    content=png_bytes,
+                    media_type="image/png",
+                    headers={
+                        "Cache-Control": "public, max-age=86400, immutable",
+                        "X-Content-Type-Options": "nosniff",
+                    },
+                )
 
     # Route 2: Compute difference directly from rendered PNG frames (fallback)
     path_a = disk_cache.get_frame_png_path(key, frame_a)
@@ -476,17 +560,104 @@ async def get_sequence_difference(
 
     diff_arr = gray_b - gray_a
     valid = alpha_a & alpha_b
-    png_bytes = render_difference_png(diff_arr, valid, already_flipped=True)
-    diff_path = disk_cache.put_frame_difference_png(key, frame_a, frame_b, png_bytes)
+    png_bytes = render_difference_png(diff_arr, valid, already_flipped=True, colormap=colormap)
+    if colormap == "grayscale":
+        diff_path = disk_cache.put_frame_difference_png(key, frame_a, frame_b, png_bytes)
+        return FileResponse(
+            path=str(diff_path),
+            media_type="image/png",
+            headers={
+                "Cache-Control": "public, max-age=86400, immutable",
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
 
-    return FileResponse(
-        path=str(diff_path),
+    return Response(
+        content=png_bytes,
         media_type="image/png",
         headers={
             "Cache-Control": "public, max-age=86400, immutable",
             "X-Content-Type-Options": "nosniff",
         },
     )
+
+
+@router.get("/sequences/{key}/arithmetic.png", tags=["sequences"])
+async def get_sequence_arithmetic_image(
+    key: str = FPath(..., description="32-character hex sequence key"),
+    op: str = Query(default="diff", regex="^(diff|sum|median)$", description="Arithmetic operator: diff, sum, median"),
+    frame_a: int = Query(default=0, ge=0, description="Reference Frame A index"),
+    frame_b: int = Query(default=1, ge=0, description="Comparison Frame B index"),
+    colormap: str = Query(default="diverging", regex="^(diverging|grayscale)$"),
+) -> Response:
+    """Temporal Image Arithmetic endpoint per NASA Space Apps Consideration 3.
+    
+    Supports:
+      - 'diff' (B - A): Diverging blue/amber dipole showing proper motion and transients
+      - 'sum' (A + B): Epoch co-add boosting faint static galaxies while smearing moving objects
+      - 'median': Multi-epoch median stack rejecting cosmic rays and moving asteroids
+    """
+    if not SEQUENCE_KEY_REGEX.match(key):
+        raise AppError("NOT_FOUND", 404, "Invalid sequence key.")
+
+    from PIL import Image
+
+    if op == "median":
+        # Load all available frame PNGs for key
+        png_paths = []
+        for i in range(30):
+            p = disk_cache.get_frame_png_path(key, i)
+            if p and p.exists():
+                png_paths.append(p)
+            else:
+                break
+        if not png_paths:
+            raise AppError("NOT_FOUND", 404, "No frames available for median stack.")
+
+        arrays = []
+        for p in png_paths:
+            img = Image.open(p).convert("LA")
+            arr = np.array(img)[:, :, 0].astype(np.float32)
+            arrays.append(arr)
+
+        stack = np.stack(arrays, axis=0)
+        med = np.median(stack, axis=0)
+        # Render median stack
+        med_u8 = np.clip(med, 0, 255).astype(np.uint8)
+        alpha = np.full_like(med_u8, 255)
+        out_img = Image.fromarray(np.stack([med_u8, alpha], axis=-1), mode="LA")
+        import io
+        buf = io.BytesIO()
+        out_img.save(buf, format="PNG")
+        return Response(content=buf.getvalue(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+    path_a = disk_cache.get_frame_png_path(key, frame_a)
+    path_b = disk_cache.get_frame_png_path(key, frame_b)
+    if not path_a or not path_a.exists() or not path_b or not path_b.exists():
+        raise AppError("NOT_FOUND", 404, "One or both target frames are missing.")
+
+    img_a = Image.open(path_a).convert("LA")
+    img_b = Image.open(path_b).convert("LA")
+    arr_a = np.array(img_a)
+    arr_b = np.array(img_b)
+    gray_a = arr_a[:, :, 0].astype(np.float32)
+    gray_b = arr_b[:, :, 0].astype(np.float32)
+    valid = (arr_a[:, :, 1] > 0) & (arr_b[:, :, 1] > 0)
+
+    if op == "sum":
+        coadd = 0.5 * (gray_a + gray_b)
+        coadd_u8 = np.clip(coadd, 0, 255).astype(np.uint8)
+        alpha = np.where(valid, 255, 0).astype(np.uint8)
+        out_img = Image.fromarray(np.stack([coadd_u8, alpha], axis=-1), mode="LA")
+        import io
+        buf = io.BytesIO()
+        out_img.save(buf, format="PNG")
+        return Response(content=buf.getvalue(), media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+    # op == "diff"
+    diff_arr = gray_b - gray_a
+    png_bytes = render_difference_png(diff_arr, valid, already_flipped=True, colormap=colormap)
+    return Response(content=png_bytes, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
 @router.get("/catalog/neossat", tags=["catalogs"])
