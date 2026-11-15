@@ -867,6 +867,20 @@ function initEventListeners() {
   if (embedSnippetBtn) embedSnippetBtn.addEventListener("click", showEmbedSnippet);
   if (closeEmbedBtn) closeEmbedBtn.addEventListener("click", () => embedBox.classList.add("hidden"));
 
+  // Landing Page view navigation
+  const backToLandingBtn = document.getElementById("back-to-landing-btn");
+  if (backToLandingBtn) {
+    backToLandingBtn.addEventListener("click", () => {
+      if (typeof window.switchView === "function") window.switchView("landing");
+    });
+  }
+  const footerLandingBtn = document.getElementById("footer-landing-btn");
+  if (footerLandingBtn) {
+    footerLandingBtn.addEventListener("click", () => {
+      if (typeof window.switchView === "function") window.switchView("landing");
+    });
+  }
+
   // Global Keyboard Shortcuts
   window.addEventListener("keydown", handleKeyboardShortcuts);
 }
@@ -1089,6 +1103,13 @@ async function fetchServiceMetadata() {
 // URL Parameter Handling & Deep-Linking
 function parseUrlParameters() {
   const params = new URLSearchParams(window.location.search);
+  const hash = window.location.hash;
+
+  if (params.has("ra") || params.has("name") || params.has("dec") || params.get("embed") === "1" || hash === "#explorer") {
+    if (typeof window.switchView === "function") {
+      window.switchView("explorer");
+    }
+  }
 
   if (params.get("embed") === "1" || params.get("embed") === "true") {
     document.body.classList.add("embed-mode");
