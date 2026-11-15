@@ -886,84 +886,97 @@
             </button>
           </div>
 
-          <!-- Top Overlay Sliding Pill Switches -->
+          <!-- Top Overlay Sliding Pill Switches (Grouped Semantic Clusters) -->
           <div class="studio-toggles-bar">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-crosshair" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Crosshair</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-compass" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Compass</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-scale" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Scale</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-gaia" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Gaia</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-wise" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">WISE</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-neossat">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">NEOSSat</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-pm-track" checked>
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">PM Track</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-ruler">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Ruler</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-centroid">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Centroid</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-band-coadd">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label" title="Stack all 17 spectral channels within active detector array using inverse-variance weights for 4.12x SNR boost">Band Co-Add (4.1x)</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-diff">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Diff (B-A)</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-invert">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Invert</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-smooth">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label">Smooth</span>
-            </label>
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-flags">
-              <span class="toggle-slider"></span>
-              <span class="toggle-label" title="SPHEREx bitmask quality flags: Cosmic ray, saturation, diffraction, blending, stray light">Quality Mask</span>
-            </label>
+            <!-- Cluster 1: Overlays & Sky Catalogs -->
+            <div class="toolbar-pill-group" title="Astrometric Overlays & Reference Catalogs">
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-crosshair" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Crosshair</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-compass" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Compass</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-scale" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Scale</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-gaia" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Gaia</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-wise" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">WISE</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-neossat">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">NEOSSat</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-pm-track" checked>
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">PM Track</span>
+              </label>
+            </div>
 
-            <!-- Zoom Buttons -->
-            <div class="zoom-controls-strip">
-              <button type="button" id="zoom-in-btn" class="btn-micro" title="Zoom In (+)">+</button>
-              <button type="button" id="zoom-out-btn" class="btn-micro" title="Zoom Out (-)">-</button>
-              <button type="button" id="zoom-reset-btn" class="btn-micro" title="Reset Zoom (Z / 0)">1.0x</button>
+            <span class="toolbar-sep" aria-hidden="true"></span>
+
+            <!-- Cluster 2: Astrometry & Spectral Analysis -->
+            <div class="toolbar-pill-group" title="Astrometry & Analysis Tools">
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-ruler">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Ruler</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-centroid">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Centroid</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-band-coadd">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label" title="Stack all 17 spectral channels within active detector array using inverse-variance weights for 4.12x SNR boost">Band Co-Add (4.1x)</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-flags">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label" title="SPHEREx bitmask quality flags: Cosmic ray, saturation, diffraction, blending, stray light">Quality Mask</span>
+              </label>
+            </div>
+
+            <span class="toolbar-sep" aria-hidden="true"></span>
+
+            <!-- Cluster 3: Image Filters & Zoom Controls -->
+            <div class="toolbar-pill-group" title="Display Filters & Zoom">
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-invert">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Invert</span>
+              </label>
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-smooth">
+                <span class="toggle-slider"></span>
+                <span class="toggle-label">Smooth</span>
+              </label>
+              <div class="zoom-controls-strip">
+                <button type="button" id="zoom-in-btn" class="btn-micro" title="Zoom In (+)">+</button>
+                <button type="button" id="zoom-out-btn" class="btn-micro" title="Zoom Out (-)">-</button>
+                <button type="button" id="zoom-reset-btn" class="btn-micro" title="Reset Zoom (Z / 0)">1.0x</button>
+              </div>
+            </div>
+
+            <!-- Keyboard Shortcut HUD Indicator -->
+            <div class="hud-shortcuts-badge" title="Canvas Keyboard Shortcuts">
+              <span class="kbd">Space</span> Blink &bull; <span class="kbd">[ / ]</span> Step &bull; <span class="kbd">Drag</span> Ruler
             </div>
           </div>
 
@@ -1029,7 +1042,6 @@
             <div class="player-options-strip">
               <button type="button" id="loop-btn" class="btn-micro active" title="Continuous Loop (1 -> N -> 1)">Loop</button>
               <button type="button" id="bounce-btn" class="btn-micro" title="Bounce / Ping-Pong (1 -> N -> 1)">Bounce</button>
-              <button type="button" id="blink-mode-btn" class="btn-micro hidden" title="Legacy toggle">Mode</button>
               <label for="speed-select" class="fps-label">FPS:
                 <select id="speed-select" class="micro-select">
                   <option value="1">0.5x</option>

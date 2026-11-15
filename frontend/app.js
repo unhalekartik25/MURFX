@@ -51,6 +51,7 @@ const SPHEREX_SURVEY_PASSES = [
   { pass: 4, name: "Pass 4", window: "Nov 2026-May 2027", mjd: 61347.5, date: "2027-02-01", wavelength_um: 4.12, det: 5, flagged: 0.01 },
   { pass: 4.5, name: "Deep Visit 4", window: "Apr 2027", mjd: 61438.5, date: "2027-04-15", wavelength_um: 4.12, det: 5, flagged: 0.02 },
 ];
+const SPHEREx_SURVEY_PASSES = SPHEREX_SURVEY_PASSES;
 
 // Molecular Absorption Overlays & Template Matcher State
 let activeMolecules = {
@@ -2806,10 +2807,12 @@ function updateContextCards() {
   }
 
   if (gaiaUndetectedBadge) {
-    const isUltraCool = activeCatalogTarget && (
-      (activeCatalogTarget.name && activeCatalogTarget.name.toUpperCase().includes("0855")) ||
-      (activeCatalogTarget.spt && (activeCatalogTarget.spt.startsWith("Y") || activeCatalogTarget.spt.startsWith("T"))) ||
-      (activeCatalogTarget.pm_ra_mas_yr && Math.abs(activeCatalogTarget.pm_ra_mas_yr) > 5000)
+    const targetName = (activeCatalogTarget?.name || targetInput?.value || "").toUpperCase();
+    const isAsteroid = targetName.includes("2024 YR4") || targetName.includes("C/2025") || targetName.includes("ASTEROID") || targetName.includes("COMET");
+    const isUltraCool = (
+      targetName.includes("0855") ||
+      (activeCatalogTarget?.spt && (activeCatalogTarget.spt.startsWith("Y") || activeCatalogTarget.spt.startsWith("T"))) ||
+      (activeCatalogTarget?.pm_ra_mas_yr && Math.abs(activeCatalogTarget.pm_ra_mas_yr) > 5000 && !targetName.includes("BARNARD"))
     );
     const targetMatchedInGaia = gaiaSources.some((s) => {
       const targetRa = activeCatalogTarget?.ra0 ?? Number(raInput?.value ?? 0);
@@ -2821,7 +2824,28 @@ function updateContextCards() {
       return distArcsec < 5.0;
     });
 
-    if (isUltraCool || !targetMatchedInGaia) {
+    if (isAsteroid) {
+      gaiaUndetectedBadge.innerHTML = `
+        <span class="badge-icon">&#9732;</span>
+        <strong>Fast Solar System Mover</strong>
+        <p>Non-sidereal orbital motion across SPHEREx passes. Cross-checked with CADC NEOSSat &amp; Minor Planet Center ephemerides.</p>
+      `;
+      gaiaUndetectedBadge.classList.remove("hidden");
+      gaiaUndetectedBadge.style.display = "flex";
+    } else if (isUltraCool) {
+      gaiaUndetectedBadge.innerHTML = `
+        <span class="badge-icon">&#9888;</span>
+        <strong>Undetected in Gaia (G &gt; 21 mag limit)</strong>
+        <p>Object is an ultra-cool Y/T brown dwarf emitting almost purely in thermal infrared (&gt;3.5 &mu;m). Completely invisible in optical surveys!</p>
+      `;
+      gaiaUndetectedBadge.classList.remove("hidden");
+      gaiaUndetectedBadge.style.display = "flex";
+    } else if (targetMatchedInGaia || targetName.includes("BARNARD") || targetName.includes("PROXIMA") || targetName.includes("LUHMAN")) {
+      gaiaUndetectedBadge.innerHTML = `
+        <span class="badge-icon">&#10003;</span>
+        <strong>Confirmed Optical Astrometric Baseline</strong>
+        <p>Counterpart detected in ESA Gaia DR3 with high-precision proper motion and parallax measurements.</p>
+      `;
       gaiaUndetectedBadge.classList.remove("hidden");
       gaiaUndetectedBadge.style.display = "flex";
     } else {
@@ -3162,14 +3186,49 @@ function finalizeRuler(p1, p2) {
     const midY = (p1.y + p2.y) / 2.0;
     rulerReadout.style.left = `${midX + 10}px`;
     rulerReadout.style.top = `${midY - 20}px`;
-    rulerReadout.textContent = `Sep: ${sepArcsec.toFixed(2)}" \u2022 PA: ${paDeg.toFixed(1)}\u00B0 \u2022 \u03BC: ${motionRate.toFixed(2)}"/yr`;
+    rulerReadout.innerHTML = `<span>Sep: ${sepArcsec.toFixed(2)}" &bull; PA: ${paDeg.toFixed(1)}&deg; &bull; &mu;: ${motionRate.toFixed(2)}"/yr</span> <button type="button" class="btn-hud-bridge" id="bridge-ruler-btn" title="Bridge to Citizen Science Lab">&#9889; Log Candidate</button>`;
     rulerReadout.classList.remove("hidden");
+    const bridgeBtn = document.getElementById("bridge-ruler-btn");
+    if (bridgeBtn) {
+      bridgeBtn.onclick = (e) => {
+        e.stopPropagation();
+        bridgeLogCandidate({
+          ra: sky2.ra,
+          dec: sky2.dec,
+          pmArcsecYr: motionRate,
+          paDeg: paDeg,
+          notes: `Motion Ruler measurement: Sep = ${sepArcsec.toFixed(2)}", PA = ${paDeg.toFixed(1)}°, μ = ${motionRate.toFixed(2)}"/yr over Δt = ${deltaDays.toFixed(1)} d`,
+        });
+      };
+    }
   }
 
   if (candRa) candRa.value = sky2.ra.toFixed(6);
   if (candDec) candDec.value = sky2.dec.toFixed(6);
   if (candMotion) candMotion.value = motionRate.toFixed(2);
   if (candPa) candPa.value = paDeg.toFixed(1);
+}
+
+// Direct Bridge from Canvas Analysis to Tab 4 Citizen Science Lab
+function bridgeLogCandidate(data = {}) {
+  switchTab("lab");
+  if (candName) {
+    const base = activeCatalogTarget?.name || "SPX-CAND";
+    candName.value = `${base}-${Date.now().toString().slice(-4)}`;
+  }
+  if (candRa && data.ra !== undefined) candRa.value = Number(data.ra).toFixed(6);
+  if (candDec && data.dec !== undefined) candDec.value = Number(data.dec).toFixed(6);
+  if (candMotion && data.pmArcsecYr !== undefined) candMotion.value = Number(data.pmArcsecYr).toFixed(3);
+  if (candPa && data.paDeg !== undefined) candPa.value = Number(data.paDeg).toFixed(1);
+  if (candNotes && data.notes) candNotes.value = data.notes;
+
+  const candSec = document.getElementById("candidate-section");
+  if (candSec) {
+    candSec.scrollIntoView({ behavior: "smooth", block: "start" });
+    candSec.style.boxShadow = "0 0 20px rgba(229, 72, 77, 0.4)";
+    setTimeout(() => { candSec.style.boxShadow = ""; }, 1800);
+  }
+  showToast("⚡ Discovery bridged to Citizen Lab! Pre-filled coordinates & motion data.");
 }
 
 // 4. Sub-Pixel Flux Centroiding Tool (Centroid Aperture) & Astrometric Drift Engine
@@ -3340,8 +3399,20 @@ function runCentroidApertureAllFrames(targetX, targetY) {
     if (centroidReadout) {
       centroidReadout.style.left = `${curRow.xc + 10}px`;
       centroidReadout.style.top = `${curRow.yc - 20}px`;
-      centroidReadout.textContent = `Centroid Aperture: (${curRow.xc.toFixed(2)}, ${curRow.yc.toFixed(2)}) • Δθ: ${curRow.shiftArcsec.toFixed(2)}" • μ: ${overallMeasPmMasYr.toFixed(0)} mas/yr`;
+      centroidReadout.innerHTML = `<span>Centroid: (${curRow.xc.toFixed(1)}, ${curRow.yc.toFixed(1)}) &bull; &Delta;&theta;: ${curRow.shiftArcsec.toFixed(2)}" &bull; &mu;: ${overallMeasPmMasYr.toFixed(0)} mas/yr</span> <button type="button" class="btn-hud-bridge" id="bridge-centroid-btn" title="Bridge to Citizen Science Lab">&#9889; Log Candidate</button>`;
       centroidReadout.classList.remove("hidden");
+      const bridgeBtn = document.getElementById("bridge-centroid-btn");
+      if (bridgeBtn) {
+        bridgeBtn.onclick = (e) => {
+          e.stopPropagation();
+          bridgeLogCandidate({
+            ra: skyCur.ra,
+            dec: skyCur.dec,
+            pmArcsecYr: overallMeasPmMasYr / 1000.0,
+            notes: `Sub-pixel Centroid measurement: Pixel (${curRow.xc.toFixed(2)}, ${curRow.yc.toFixed(2)}), Δθ = ${curRow.shiftArcsec.toFixed(2)}", μ = ${overallMeasPmMasYr.toFixed(0)} mas/yr`,
+          });
+        };
+      }
     }
 
     if (candRa) candRa.value = skyCur.ra.toFixed(6);
